@@ -1,0 +1,183 @@
+general:
+  height-below: 32
+  height-above: 48
+  protect-blocks-from-explosions: true
+  allow-pvp-inside-zones: false
+  core-pulse-damage: 2.0
+  max-members-per-region: 20
+  home:
+    scan-up: 48
+  max-regions:
+    default: 3
+    vip: 6
+    vip-permission: "protectionstones.vip"
+  actionbar:
+    cooldown-ticks: 25
+  outline:
+    mode: "LINES" # LINES, PARTICLES or FAKE_BLOCKS
+    duration-ticks: 80
+    preview-interval-ticks: 6
+    preview-distance: 6
+    step: 4
+    spacing: 0.85
+    particle-size: 1.15
+    fake-block: "LIGHT_BLUE_STAINED_GLASS"
+    particle: "REDSTONE"
+    particle-red: 90
+    particle-green: 220
+    particle-blue: 255
+
+messages:
+  prefix: "&7[&bLZones&7] "
+  member-added: "&aИгрок &f{player}&a добавлен в регион &f{region}&a. Участников: &f{count}/{max}"
+  member-already-added: "&eИгрок &f{player}&e уже добавлен в этот регион."
+  member-owner: "&eВладелец уже имеет полный доступ к региону."
+  member-limit-reached: "&cВ регионе уже максимум участников: &f{max}"
+  member-removed: "&aИгрок &f{player}&a удалён из региона &f{region}&a."
+  member-not-found: "&cИгрок &f{player}&c не найден в участниках региона."
+  member-list-empty: "&eВ регионе &f{region}&e пока нет участников."
+  member-list: "&7Участники региона &b{region}&7: &f{members} &7(&f{count}/{max}&7)"
+  region-created: "&aЗона создана. Радиус: &f{radius}"
+  region-removed: "&cЗона удалена."
+  region-upgraded: "&aРадиус ядра улучшен до уровня &f{level}&a. Новый радиус: &f{radius}"
+  region-list-empty: "&cУ вас пока нет зон."
+  region-info: "&7Зона &b{name}&7 | владелец: &f{owner}&7 | книга: &f{level}&7 | радиус: &f{radius}&7 | TNT: &f{damage}/{max_damage}"
+  limit-reached: "&cДостигнут лимит зон: &f{limit}"
+  overlap: "&cНовая зона пересекается с уже существующей."
+  normal-block: "&cОбычный блок не активирует приват. Нужен блок, созданный через книгу зоны."
+  need-permission-tier: "&cДля этой оболочки нужна привилегия: &f{permission}"
+  enter-own: "&aВы вошли в свой регион: &f{name}"
+  enter-other: "&cВы вошли в чужой регион: &f{owner}"
+  exit-zone: "&7Вы вышли из региона: &f{name}"
+  cannot-break: "&cВы не можете ломать блоки в чужом регионе"
+  cannot-place: "&cВы не можете ставить блоки в чужом регионе"
+  cannot-interact: "&cВы не можете взаимодействовать в чужом регионе"
+  pvp-denied: "&cВ этом регионе PvP запрещено"
+  no-region: "&cВы не находитесь в регионе."
+  no-near-region: "&cРядом нет вашего региона."
+  outline-shown: "&bГраница региона показана линиями."
+  bomb-arming: "&cОсадная сфера {level}: детонация через {seconds} сек."
+  bomb-detonated: "&4Осадная сфера взорвалась."
+  core-damaged: "&6Ядро получило урон TNT: &f{damage}/{max_damage}"
+  core-destroyed: "&cЯдро региона разрушено."
+  upgrade-opened: "&eОткрыто меню улучшения зоны."
+  upgrade-no-next: "&cЭто максимальный уровень книги зоны."
+  upgrade-missing-book: "&cНужна книга зоны уровня &f{book_level}"
+  upgrade-missing-item: "&cНе хватает ресурса: &f{material} x{amount}"
+  upgrade-done: "&aУлучшение выполнено."
+  particles-enabled: "&aВизуализация зон включена."
+  particles-disabled: "&cВизуализация зон отключена."
+  admin-enabled: "&aАдмин-режим включён."
+  admin-disabled: "&cАдмин-режим выключен."
+  given-item: "&aВыдан предмет: &f{item}"
+  reload-done: "&aКонфиг перезагружен."
+  recipe-note: "&7Новые рецепты применяются после рестарта сервера."
+  home-teleport: "&bТелепортация на home региона: &f{name}"
+
+protection:
+  tiers:
+    iron:
+      level: 1
+      block: "IRON_BLOCK"
+      radius: 16
+      tnt-hits: 2
+      craftable: true
+      permission: ""
+      upgrade:
+        next: "gold"
+        book-level: 2
+        ingredients: {}
+    gold:
+      level: 2
+      block: "GOLD_BLOCK"
+      radius: 24
+      tnt-hits: 3
+      craftable: true
+      permission: ""
+      upgrade:
+        next: "emerald"
+        book-level: 3
+        ingredients: {}
+    emerald:
+      level: 3
+      block: "EMERALD_BLOCK"
+      radius: 32
+      tnt-hits: 4
+      craftable: true
+      permission: ""
+      upgrade:
+        next: "diamond"
+        book-level: 4
+        ingredients: {}
+    diamond:
+      level: 4
+      block: "DIAMOND_BLOCK"
+      radius: 48
+      tnt-hits: 6
+      craftable: true
+      permission: ""
+      upgrade:
+        next: "netherite"
+        book-level: 5
+        ingredients: {}
+    netherite:
+      level: 5
+      block: "NETHERITE_BLOCK"
+      radius: 72
+      tnt-hits: 10
+      craftable: true
+      permission: "protectionstones.core.netherite"
+      upgrade:
+        next: ""
+        book-level: 0
+        ingredients: {}
+
+explosive:
+  countdown-seconds: 5
+  sphere-points: 48
+  wave-steps: 6
+  end:
+    rise-ticks: 40
+    power-multiplier: 2.0
+  mega-five:
+    rise-ticks: 64
+    spin-ticks: 48
+    rise-height: 7.0
+    absorb-radius: 14.0
+    absorb-blocks-per-tick: 12
+    max-absorbed-blocks: 220
+    max-visual-radius: 2.4
+    explosion-power: 24.0
+    explosion-radius: 32.0
+  levels:
+    1:
+      item: "REDSTONE_BLOCK"
+      power: 2.5
+      core-hits: 1
+    2:
+      item: "MAGMA_BLOCK"
+      power: 4.0
+      core-hits: 2
+    3:
+      item: "NETHER_WART_BLOCK"
+      power: 6.0
+      core-hits: 3
+    4:
+      item: "CRYING_OBSIDIAN"
+      power: 8.0
+      core-hits: 5
+    5:
+      item: "RESPAWN_ANCHOR"
+      power: 12.0
+      core-hits: 10
+
+recipes:
+  iron-core:
+    enabled: true
+    shape:
+      - "MMM"
+      - "MBM"
+      - "MMM"
+    ingredients:
+      M: "IRON_BLOCK"
+      B: "ENCHANTED_BOOK"

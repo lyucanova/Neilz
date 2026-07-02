@@ -1,0 +1,32 @@
+name: LZones
+version: "2.1.1-custom"
+main: me.ruslan.protectionstones.ProtectionStonesPlugin
+api-version: "1.20"
+authors: [Ruslan, OpenAI]
+description: Custom enchanted protection cores, command-only books, siege bombs and region home teleports.
+
+commands:
+  lr:
+    description: Управление зонами и служебными предметами
+    usage: /lr
+    aliases: [region, zonestone]
+    permission: protectionstones.use
+  private:
+    description: Телепорт на home привата
+    usage: /private home [name]
+    aliases: [privhome]
+    permission: protectionstones.use
+
+permissions:
+  protectionstones.use:
+    default: true
+  protectionstones.reload:
+    default: op
+  protectionstones.admin:
+    default: op
+  protectionstones.give:
+    default: op
+  protectionstones.core.netherite:
+    default: op
+  protectionstones.bomb:
+    default: op
