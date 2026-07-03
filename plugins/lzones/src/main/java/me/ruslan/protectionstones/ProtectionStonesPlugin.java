@@ -72,6 +72,12 @@ extends JavaPlugin {
         catch (IOException exception) {
             this.getLogger().severe("Failed to load regions.yml: " + exception.getMessage());
         }
+        try {
+            this.bombService.loadRadiationZones();
+        }
+        catch (IOException exception) {
+            this.getLogger().warning("Failed to load radiation.yml: " + exception.getMessage());
+        }
         this.recipeService.registerRecipes();
         LRCommand lrCommand = new LRCommand(this);
         if (this.getCommand("lr") != null) {
@@ -102,6 +108,14 @@ extends JavaPlugin {
 
     public void onDisable() {
         this.saveRegionsQuietly();
+        if (this.bombService != null) {
+            try {
+                this.bombService.saveRadiationZones();
+            }
+            catch (IOException exception) {
+                this.getLogger().warning("Failed to save radiation.yml: " + exception.getMessage());
+            }
+        }
         this.adminModePlayers.clear();
         this.visualizationDisabledPlayers.clear();
     }
@@ -132,22 +146,34 @@ extends JavaPlugin {
         changed |= this.setIfMissing("shop.tnt-prices.4", 1000000.0);
         changed |= this.setIfMissing("shop.tnt-prices.5", 15000000.0);
         changed |= this.setIfMissing("explosive.levels.6.item", "TNT");
-        changed |= this.setIfMissing("explosive.levels.6.power", 18.0);
-        changed |= this.setIfMissing("explosive.levels.6.core-hits", 14);
-        changed |= this.setIfMissing("explosive.nuclear.charge-ticks", 100);
-        changed |= this.migrateDouble("explosive.nuclear.blast-radius", 30.0, 100.0);
-        changed |= this.migrateDouble("explosive.nuclear.explosion-power", 18.0, 22.0);
-        changed |= this.migrateInt("explosive.nuclear.crater-radius", 10, 24);
-        changed |= this.migrateInt("explosive.nuclear.crater-depth", 5, 8);
-        changed |= this.migrateDouble("explosive.nuclear.mushroom-height", 36.0, 95.0);
-        changed |= this.migrateDouble("explosive.nuclear.mushroom-radius", 13.0, 38.0);
-        changed |= this.migrateDouble("explosive.nuclear.radiation-radius", 28.0, 300.0);
-        changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 180, 240);
+        changed |= this.migrateDouble("explosive.levels.6.power", 18.0, 30.0);
+        changed |= this.migrateInt("explosive.levels.6.core-hits", 14, 20);
+        changed |= this.migrateInt("explosive.nuclear.charge-ticks", 100, 120);
+        changed |= this.migrateDouble("explosive.nuclear.blast-radius", 30.0, 120.0);
+        changed |= this.migrateDouble("explosive.nuclear.blast-radius", 100.0, 120.0);
+        changed |= this.migrateDouble("explosive.nuclear.explosion-power", 18.0, 36.0);
+        changed |= this.migrateDouble("explosive.nuclear.explosion-power", 22.0, 36.0);
+        changed |= this.migrateInt("explosive.nuclear.crater-radius", 10, 30);
+        changed |= this.migrateInt("explosive.nuclear.crater-radius", 24, 30);
+        changed |= this.migrateInt("explosive.nuclear.crater-depth", 5, 14);
+        changed |= this.migrateInt("explosive.nuclear.crater-depth", 8, 14);
+        changed |= this.setIfMissing("explosive.nuclear.crater-height", 18);
+        changed |= this.migrateDouble("explosive.nuclear.mushroom-height", 36.0, 120.0);
+        changed |= this.migrateDouble("explosive.nuclear.mushroom-height", 95.0, 120.0);
+        changed |= this.migrateDouble("explosive.nuclear.mushroom-radius", 13.0, 52.0);
+        changed |= this.migrateDouble("explosive.nuclear.mushroom-radius", 38.0, 52.0);
+        changed |= this.setIfMissing("explosive.nuclear.radiation-start-radius", 100.0);
+        changed |= this.migrateDouble("explosive.nuclear.radiation-radius", 28.0, 200.0);
+        changed |= this.migrateDouble("explosive.nuclear.radiation-radius", 300.0, 200.0);
+        changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 180, -1);
+        changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 240, -1);
+        changed |= this.setIfMissing("explosive.nuclear.radiation-expansion-seconds", 2400);
         changed |= this.setIfMissing("explosive.nuclear.exposure-per-second", 1.0);
         changed |= this.setIfMissing("explosive.nuclear.safe-decay-per-second", 0.35);
         changed |= this.setIfMissing("explosive.nuclear.damage-threshold", 12.0);
         changed |= this.setIfMissing("explosive.nuclear.damage-per-second", 1.5);
-        changed |= this.migrateDouble("explosive.nuclear.core-shockwave-radius", 34.0, 100.0);
+        changed |= this.migrateDouble("explosive.nuclear.core-shockwave-radius", 34.0, 120.0);
+        changed |= this.migrateDouble("explosive.nuclear.core-shockwave-radius", 100.0, 120.0);
         changed |= this.setIfMissing("messages.nuclear-arming", "&4⚠ Ядерная бомба: детонация через &f{seconds}&4 сек.");
         changed |= this.setIfMissing("messages.nuclear-detonated", "&4⚠ Ядерный взрыв. В кратере радиация!");
         changed |= this.setIfMissing("messages.radiation-warning", "&e⚠ Радиация: облучение &f{dose}/{threshold}");

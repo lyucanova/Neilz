@@ -25,6 +25,8 @@
  */
 package me.ruslan.protectionstones.service;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +47,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Item;
@@ -58,6 +61,7 @@ import org.bukkit.util.Vector;
 
 public final class BombService {
     private final ProtectionStonesPlugin plugin;
+    private final File radiationStorageFile;
     private final Map<String, PendingBomb> pendingBombs = new HashMap<String, PendingBomb>();
     private final Map<UUID, FallingBomb> fallingBombs = new HashMap<UUID, FallingBomb>();
     private final List<RadiationZone> radiationZones = new ArrayList<RadiationZone>();
@@ -65,6 +69,52 @@ public final class BombService {
 
     public BombService(ProtectionStonesPlugin plugin) {
         this.plugin = plugin;
+        this.radiationStorageFile = new File(plugin.getDataFolder(), "radiation.yml");
+    }
+
+    public void loadRadiationZones() throws IOException {
+        this.radiationZones.clear();
+        if (!this.radiationStorageFile.exists()) {
+            return;
+        }
+        YamlConfiguration configuration = YamlConfiguration.loadConfiguration((File)this.radiationStorageFile);
+        long now = System.currentTimeMillis();
+        for (Map<?, ?> entry : configuration.getMapList("zones")) {
+            Object worldValue = entry.get("world");
+            String worldName = worldValue == null ? "" : String.valueOf(worldValue);
+            if (worldName.isBlank()) {
+                continue;
+            }
+            RadiationZone zone = new RadiationZone(worldName, this.doubleValue(entry.get("x"), 0.0), this.doubleValue(entry.get("y"), 0.0), this.doubleValue(entry.get("z"), 0.0), this.doubleValue(entry.get("start-radius"), 100.0), this.doubleValue(entry.get("max-radius"), 200.0), this.longValue(entry.get("created-at"), now), Math.max(1L, this.longValue(entry.get("expansion-millis"), 2400000L)), this.longValue(entry.get("expires-at"), -1L));
+            if (zone.expired(now)) {
+                continue;
+            }
+            this.radiationZones.add(zone);
+        }
+    }
+
+    public void saveRadiationZones() throws IOException {
+        YamlConfiguration configuration = new YamlConfiguration();
+        ArrayList<Map<String, Object>> serialized = new ArrayList<Map<String, Object>>();
+        long now = System.currentTimeMillis();
+        for (RadiationZone zone : this.radiationZones) {
+            if (zone.expired(now)) {
+                continue;
+            }
+            HashMap<String, Object> entry = new HashMap<String, Object>();
+            entry.put("world", zone.worldName());
+            entry.put("x", zone.x());
+            entry.put("y", zone.y());
+            entry.put("z", zone.z());
+            entry.put("start-radius", zone.startRadius());
+            entry.put("max-radius", zone.maxRadius());
+            entry.put("created-at", zone.createdAtMillis());
+            entry.put("expansion-millis", zone.expansionMillis());
+            entry.put("expires-at", zone.expiresAtMillis());
+            serialized.add(entry);
+        }
+        configuration.set("zones", serialized);
+        configuration.save(this.radiationStorageFile);
     }
 
     public boolean isPending(Location location) {
@@ -186,10 +236,10 @@ public final class BombService {
     public void tickRadiation() {
         Settings.NuclearBombSettings nuclear = this.plugin.getSettings().nuclearBombSettings();
         long now = System.currentTimeMillis();
-        this.radiationZones.removeIf(zone -> zone.expiresAtMillis() <= now || Bukkit.getWorld((String)zone.worldName()) == null);
+        this.radiationZones.removeIf(zone -> zone.expired(now) || Bukkit.getWorld((String)zone.worldName()) == null);
         Set<UUID> exposedPlayers = new HashSet<UUID>();
         for (Player player : Bukkit.getOnlinePlayers()) {
-            RadiationZone zone = this.radiationZoneAt(player.getLocation());
+            RadiationZone zone = this.radiationZoneAt(player.getLocation(), now);
             UUID uuid = player.getUniqueId();
             if (zone == null) {
                 this.decayRadiation(uuid, nuclear);
@@ -223,9 +273,9 @@ public final class BombService {
         this.radiationExposure.put(uuid, nextDose);
     }
 
-    private RadiationZone radiationZoneAt(Location location) {
+    private RadiationZone radiationZoneAt(Location location, long now) {
         for (RadiationZone zone : this.radiationZones) {
-            if (!zone.contains(location)) continue;
+            if (!zone.contains(location, now)) continue;
             return zone;
         }
         return null;
@@ -245,12 +295,41 @@ public final class BombService {
             world.spawnParticle(Particle.REDSTONE, location, 4, 0.25, 0.45, 0.25, 0.0, (Object)new Particle.DustOptions(Color.fromRGB((int)255, (int)40, (int)40), 1.1f));
         }
         Location center = zone.center();
-        double ambientRadius = Math.min(110.0, zone.radius() * 0.35);
+        double currentRadius = zone.currentRadius(System.currentTimeMillis());
+        double ambientRadius = Math.min(110.0, currentRadius * 0.35);
         world.spawnParticle(Particle.REDSTONE, center.clone().add(0.0, 0.8, 0.0), 5, ambientRadius, 0.35, ambientRadius, 0.0, (Object)glow);
     }
 
     private String formatDose(double value) {
         return String.format(Locale.ROOT, "%.1f", value);
+    }
+
+    private double doubleValue(Object value, double fallback) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value instanceof String string) {
+            try {
+                return Double.parseDouble(string);
+            }
+            catch (NumberFormatException ignored) {
+            }
+        }
+        return fallback;
+    }
+
+    private long longValue(Object value, long fallback) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String string) {
+            try {
+                return Long.parseLong(string);
+            }
+            catch (NumberFormatException ignored) {
+            }
+        }
+        return fallback;
     }
 
     private void runNuclearSequence(final Location origin, final Settings.BombTier tier, final UUID ownerUuid) {
@@ -318,11 +397,12 @@ public final class BombService {
         Player owner = Bukkit.getPlayer((UUID)ownerUuid);
         this.animateFinalWave(center, Math.min(40.0, nuclear.blastRadius()));
         this.animateNuclearShockwave(center, nuclear.blastRadius(), nuclear.radiationRadius());
-        world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.45f);
-        world.playSound(center, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.8f, 0.45f);
-        world.playSound(center, Sound.ENTITY_WITHER_DEATH, 1.25f, 0.55f);
+        world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.35f);
+        world.playSound(center, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.35f);
+        world.playSound(center, Sound.ENTITY_WITHER_DEATH, 1.7f, 0.45f);
+        world.playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.8f, 0.55f);
         world.createExplosion(center, nuclear.explosionPower(), false, true, (Entity)owner);
-        this.createNuclearCrater(center, nuclear.craterRadius(), nuclear.craterDepth());
+        this.createNuclearCrater(center, nuclear.craterRadius(), nuclear.craterDepth(), nuclear.craterHeight());
         this.applyCoreShockwave(center, nuclear.coreShockwaveRadius(), tier.coreHits());
         this.renderNuclearMushroom(center, nuclear);
         this.createRadiationZone(center, nuclear);
@@ -330,7 +410,13 @@ public final class BombService {
             LivingEntity living;
             if (!(entity instanceof LivingEntity) || (living = (LivingEntity)entity).isDead()) continue;
             double distance = Math.max(1.0, entity.getLocation().distance(center));
-            double damage = Math.max(6.0, (nuclear.blastRadius() - distance) * 1.15);
+            double falloff = Math.max(0.0, 1.0 - distance / nuclear.blastRadius());
+            double damage = Math.max(10.0, nuclear.blastRadius() * 1.65 * falloff);
+            Vector push = entity.getLocation().toVector().subtract(center.toVector());
+            if (push.lengthSquared() > 0.0) {
+                push.normalize().multiply(2.2 * falloff + 0.35).setY(0.85 + falloff * 1.5);
+                living.setVelocity(living.getVelocity().multiply(0.2).add(push));
+            }
             if (owner != null) {
                 living.damage(damage, (Entity)owner);
                 continue;
@@ -396,7 +482,7 @@ public final class BombService {
         }
     }
 
-    private void createNuclearCrater(Location center, int radius, int depth) {
+    private void createNuclearCrater(Location center, int radius, int depth, int height) {
         World world = center.getWorld();
         if (world == null) {
             return;
@@ -409,8 +495,9 @@ public final class BombService {
                 double horizontal = Math.sqrt((double)(x * x + z * z));
                 if (horizontal > (double)radius) continue;
                 int localDepth = Math.max(1, (int)Math.round((double)depth * (1.0 - horizontal / (double)radius)));
-                for (int y = 0; y <= localDepth; ++y) {
-                    int blockY = baseY - y;
+                int localHeight = Math.max(0, (int)Math.round((double)height * Math.pow(1.0 - horizontal / (double)radius, 0.72)));
+                for (int y = -localDepth; y <= localHeight; ++y) {
+                    int blockY = baseY + y;
                     if (blockY < world.getMinHeight() || blockY >= world.getMaxHeight()) continue;
                     Block block = world.getBlockAt(baseX + x, blockY, baseZ + z);
                     if (!this.canCrater(block) || this.plugin.getRegionService().regionAt(block.getLocation()).isPresent()) continue;
@@ -418,8 +505,8 @@ public final class BombService {
                 }
             }
         }
-        world.spawnParticle(Particle.SMOKE_LARGE, center.clone().add(0.0, 1.0, 0.0), 80, radius * 0.55, 1.2, radius * 0.55, 0.04);
-        world.spawnParticle(Particle.LAVA, center.clone().add(0.0, 0.4, 0.0), 35, radius * 0.35, 0.5, radius * 0.35, 0.0);
+        world.spawnParticle(Particle.SMOKE_LARGE, center.clone().add(0.0, 1.0, 0.0), 150, radius * 0.65, Math.max(2.0, height * 0.2), radius * 0.65, 0.05);
+        world.spawnParticle(Particle.LAVA, center.clone().add(0.0, 0.4, 0.0), 55, radius * 0.42, 0.8, radius * 0.42, 0.0);
     }
 
     private boolean canCrater(Block block) {
@@ -480,23 +567,26 @@ public final class BombService {
     }
 
     private void createRadiationZone(Location center, Settings.NuclearBombSettings nuclear) {
-        long expiresAt = System.currentTimeMillis() + (long)nuclear.radiationDurationSeconds() * 1000L;
-        this.radiationZones.add(new RadiationZone(center.getWorld().getName(), center.getX(), center.getY(), center.getZ(), nuclear.radiationRadius(), expiresAt));
-        this.renderRadiationRing(center, nuclear.radiationRadius());
+        long now = System.currentTimeMillis();
+        long expiresAt = nuclear.radiationDurationSeconds() < 0 ? -1L : now + (long)nuclear.radiationDurationSeconds() * 1000L;
+        long expansionMillis = Math.max(1000L, (long)nuclear.radiationExpansionSeconds() * 1000L);
+        this.radiationZones.add(new RadiationZone(center.getWorld().getName(), center.getX(), center.getY(), center.getZ(), nuclear.radiationStartRadius(), nuclear.radiationRadius(), now, expansionMillis, expiresAt));
+        this.renderRadiationRing(center, nuclear.radiationStartRadius(), nuclear.radiationRadius());
     }
 
-    private void renderRadiationRing(Location center, double radius) {
+    private void renderRadiationRing(Location center, double startRadius, double maxRadius) {
         World world = center.getWorld();
         if (world == null) {
             return;
         }
         Particle.DustOptions glow = new Particle.DustOptions(Color.fromRGB((int)115, (int)255, (int)60), 1.35f);
         Particle.DustOptions edge = new Particle.DustOptions(Color.fromRGB((int)180, (int)255, (int)90), 1.7f);
-        for (double ring = radius * 0.18; ring <= radius; ring += Math.max(22.0, radius * 0.11)) {
+        for (double ring = startRadius * 0.35; ring <= maxRadius; ring += Math.max(16.0, maxRadius * 0.1)) {
             this.renderFlatRing(center.clone().add(0.0, 0.25, 0.0), ring, 144, glow);
         }
-        this.renderFlatRing(center.clone().add(0.0, 0.65, 0.0), radius, 192, edge);
-        world.spawnParticle(Particle.REDSTONE, center.clone().add(0.0, 1.0, 0.0), 80, Math.min(120.0, radius * 0.28), 0.8, Math.min(120.0, radius * 0.28), 0.0, (Object)glow);
+        this.renderFlatRing(center.clone().add(0.0, 0.65, 0.0), startRadius, 192, edge);
+        this.renderFlatRing(center.clone().add(0.0, 1.0, 0.0), maxRadius, 224, edge);
+        world.spawnParticle(Particle.REDSTONE, center.clone().add(0.0, 1.0, 0.0), 90, Math.min(90.0, startRadius * 0.42), 0.8, Math.min(90.0, startRadius * 0.42), 0.0, (Object)glow);
     }
 
     private void runMegaSequence(final Location origin, final Settings.BombTier tier, final UUID ownerUuid) {
@@ -873,14 +963,27 @@ public final class BombService {
     private record FallingBomb(UUID ownerUuid, Settings.BombTier tier) {
     }
 
-    private record RadiationZone(String worldName, double x, double y, double z, double radius, long expiresAtMillis) {
-        boolean contains(Location location) {
+    private record RadiationZone(String worldName, double x, double y, double z, double startRadius, double maxRadius, long createdAtMillis, long expansionMillis, long expiresAtMillis) {
+        boolean contains(Location location, long now) {
             if (location == null || location.getWorld() == null || !this.worldName.equals(location.getWorld().getName())) {
                 return false;
             }
             double dx = location.getX() - this.x;
             double dz = location.getZ() - this.z;
-            return dx * dx + dz * dz <= this.radius * this.radius;
+            double radius = this.currentRadius(now);
+            return dx * dx + dz * dz <= radius * radius;
+        }
+
+        boolean expired(long now) {
+            return this.expiresAtMillis > 0L && this.expiresAtMillis <= now;
+        }
+
+        double currentRadius(long now) {
+            if (this.expansionMillis <= 0L || this.maxRadius <= this.startRadius) {
+                return this.maxRadius;
+            }
+            double progress = Math.max(0.0, Math.min(1.0, (double)(now - this.createdAtMillis) / (double)this.expansionMillis));
+            return this.startRadius + (this.maxRadius - this.startRadius) * progress;
         }
 
         Location center() {
