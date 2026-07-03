@@ -162,14 +162,15 @@ explosive:
     explosion-power: 24.0
     explosion-radius: 32.0
   nuclear:
-    charge-ticks: 120
-    blast-radius: 120.0
-    explosion-power: 36.0
-    crater-radius: 30
-    crater-depth: 14
-    crater-height: 18
-    mushroom-height: 120.0
-    mushroom-radius: 52.0
+    charge-ticks: 140
+    yield-kilotons: 24.0
+    blast-radius: 180.0
+    explosion-power: 52.0
+    crater-radius: 38
+    crater-depth: 18
+    crater-height: 24
+    mushroom-height: 170.0
+    mushroom-radius: 72.0
     radiation-start-radius: 100.0
     radiation-radius: 200.0
     radiation-duration-seconds: -1
@@ -178,7 +179,7 @@ explosive:
     safe-decay-per-second: 0.35
     damage-threshold: 12.0
     damage-per-second: 1.5
-    core-shockwave-radius: 120.0
+    core-shockwave-radius: 180.0
   levels:
     1:
       item: "REDSTONE_BLOCK"
@@ -202,7 +203,7 @@ explosive:
       core-hits: 10
     6:
       item: "TNT"
-      power: 30.0
+      power: 24.0
       core-hits: 20
 
 recipes:
