@@ -155,19 +155,19 @@ explosive:
     explosion-radius: 32.0
   nuclear:
     charge-ticks: 100
-    blast-radius: 30.0
-    explosion-power: 18.0
-    crater-radius: 10
-    crater-depth: 5
-    mushroom-height: 36.0
-    mushroom-radius: 13.0
-    radiation-radius: 28.0
-    radiation-duration-seconds: 180
+    blast-radius: 100.0
+    explosion-power: 22.0
+    crater-radius: 24
+    crater-depth: 8
+    mushroom-height: 95.0
+    mushroom-radius: 38.0
+    radiation-radius: 300.0
+    radiation-duration-seconds: 240
     exposure-per-second: 1.0
     safe-decay-per-second: 0.35
     damage-threshold: 12.0
     damage-per-second: 1.5
-    core-shockwave-radius: 34.0
+    core-shockwave-radius: 100.0
   levels:
     1:
       item: "REDSTONE_BLOCK"

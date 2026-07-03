@@ -245,7 +245,8 @@ public final class BombService {
             world.spawnParticle(Particle.REDSTONE, location, 4, 0.25, 0.45, 0.25, 0.0, (Object)new Particle.DustOptions(Color.fromRGB((int)255, (int)40, (int)40), 1.1f));
         }
         Location center = zone.center();
-        world.spawnParticle(Particle.REDSTONE, center.clone().add(0.0, 0.8, 0.0), 3, zone.radius() * 0.45, 0.2, zone.radius() * 0.45, 0.0, (Object)glow);
+        double ambientRadius = Math.min(110.0, zone.radius() * 0.35);
+        world.spawnParticle(Particle.REDSTONE, center.clone().add(0.0, 0.8, 0.0), 5, ambientRadius, 0.35, ambientRadius, 0.0, (Object)glow);
     }
 
     private String formatDose(double value) {
@@ -270,8 +271,8 @@ public final class BombService {
                     return;
                 }
                 double progress = (double)this.tick / (double)nuclear.chargeTicks();
-                BombService.this.renderNuclearCharge(origin, this.tick, progress);
-                BombService.this.pullNearbyEntities(origin, Math.min(14.0, nuclear.blastRadius() * 0.45), 0.05 + progress * 0.12, true);
+                BombService.this.renderNuclearCharge(origin, this.tick, progress, nuclear);
+                BombService.this.pullNearbyEntities(origin, Math.min(35.0, nuclear.blastRadius() * 0.35), 0.05 + progress * 0.14, true);
                 if (this.tick % 10 == 0) {
                     world.playSound(origin, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.45f + (float)progress * 0.8f);
                     world.playSound(origin, Sound.BLOCK_BEACON_AMBIENT, 0.75f, 0.45f + (float)progress * 0.5f);
@@ -281,26 +282,32 @@ public final class BombService {
         }.runTaskTimer((Plugin)this.plugin, 0L, 2L);
     }
 
-    private void renderNuclearCharge(Location center, int tick, double progress) {
+    private void renderNuclearCharge(Location center, int tick, double progress, Settings.NuclearBombSettings nuclear) {
         World world = center.getWorld();
         if (world == null) {
             return;
         }
-        double radius = 1.2 + progress * 4.6;
+        double radius = 3.0 + progress * Math.min(24.0, nuclear.blastRadius() * 0.24);
+        double columnHeight = 6.0 + progress * Math.min(34.0, nuclear.mushroomHeight() * 0.36);
         double rotation = (double)tick * 0.22;
         Particle.DustOptions red = new Particle.DustOptions(Color.fromRGB((int)255, (int)35, (int)25), 1.8f);
         Particle.DustOptions yellow = new Particle.DustOptions(Color.fromRGB((int)255, (int)210, (int)70), 1.35f);
         Particle.DustOptions green = new Particle.DustOptions(Color.fromRGB((int)120, (int)255, (int)70), 1.15f);
-        for (int i = 0; i < 36; ++i) {
-            double angle = rotation + Math.PI * 2.0 / 36.0 * (double)i;
+        for (int i = 0; i < 72; ++i) {
+            double angle = rotation + Math.PI * 2.0 / 72.0 * (double)i;
             double x = Math.cos(angle) * radius;
             double z = Math.sin(angle) * radius;
-            double y = Math.sin(angle * 2.0 + rotation) * 1.2;
+            double y = Math.sin(angle * 2.0 + rotation) * 2.2 + progress * 1.8;
             world.spawnParticle(Particle.REDSTONE, center.clone().add(x, y, z), 1, 0.0, 0.0, 0.0, 0.0, (Object)(i % 3 == 0 ? green : red));
             world.spawnParticle(Particle.REDSTONE, center.clone().add(x * 0.42, y * 0.55, z * 0.42), 1, 0.0, 0.0, 0.0, 0.0, (Object)yellow);
         }
-        world.spawnParticle(Particle.FLAME, center, 10, radius * 0.25, 0.8, radius * 0.25, 0.02);
-        world.spawnParticle(Particle.SMOKE_LARGE, center, 8, radius * 0.45, 0.8, radius * 0.45, 0.015);
+        for (double y = 0.0; y <= columnHeight; y += 2.4) {
+            world.spawnParticle(Particle.REDSTONE, center.clone().add(0.0, y, 0.0), 3, radius * 0.08, 0.1, radius * 0.08, 0.0, (Object)yellow);
+            world.spawnParticle(Particle.SMOKE_LARGE, center.clone().add(0.0, y, 0.0), 3, radius * 0.12, 0.2, radius * 0.12, 0.012);
+        }
+        this.renderFlatRing(center.clone().add(0.0, 0.25, 0.0), radius * (1.2 + progress), 96, new Particle.DustOptions(Color.fromRGB((int)255, (int)90, (int)40), 1.35f));
+        world.spawnParticle(Particle.FLAME, center, 18, radius * 0.3, 1.3, radius * 0.3, 0.025);
+        world.spawnParticle(Particle.SMOKE_LARGE, center, 16, radius * 0.5, 1.2, radius * 0.5, 0.018);
     }
 
     private void detonateNuclear(Location center, Settings.BombTier tier, UUID ownerUuid, Settings.NuclearBombSettings nuclear) {
@@ -309,8 +316,8 @@ public final class BombService {
             return;
         }
         Player owner = Bukkit.getPlayer((UUID)ownerUuid);
-        this.animateFinalWave(center, nuclear.blastRadius());
-        this.animateFinalWave(center, nuclear.radiationRadius());
+        this.animateFinalWave(center, Math.min(40.0, nuclear.blastRadius()));
+        this.animateNuclearShockwave(center, nuclear.blastRadius(), nuclear.radiationRadius());
         world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.45f);
         world.playSound(center, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.8f, 0.45f);
         world.playSound(center, Sound.ENTITY_WITHER_DEATH, 1.25f, 0.55f);
@@ -333,6 +340,59 @@ public final class BombService {
         for (Player nearby : world.getPlayers()) {
             if (!(nearby.getLocation().distanceSquared(center) <= nuclear.radiationRadius() * nuclear.radiationRadius() * 4.0)) continue;
             this.plugin.getMessageService().actionBar(nearby, "nuclear-detonated-" + this.key(center), "nuclear-detonated", Map.of());
+        }
+    }
+
+    private void animateNuclearShockwave(final Location center, final double blastRadius, final double radiationRadius) {
+        final World world = center.getWorld();
+        if (world == null) {
+            return;
+        }
+        final Particle.DustOptions fire = new Particle.DustOptions(Color.fromRGB((int)255, (int)70, (int)20), 1.8f);
+        final Particle.DustOptions hot = new Particle.DustOptions(Color.fromRGB((int)255, (int)220, (int)80), 1.35f);
+        final Particle.DustOptions radiation = new Particle.DustOptions(Color.fromRGB((int)115, (int)255, (int)60), 1.55f);
+        new BukkitRunnable(){
+            int tick;
+
+            public void run() {
+                if (this.tick > 140) {
+                    this.cancel();
+                    return;
+                }
+                double progress = (double)this.tick / 140.0;
+                double blastProgress = Math.min(1.0, progress * 1.65);
+                double blast = Math.max(2.0, blastRadius * blastProgress);
+                double rad = Math.max(3.0, radiationRadius * progress);
+                if (blastProgress < 1.0) {
+                    BombService.this.renderFlatRing(center.clone().add(0.0, 0.35, 0.0), blast, 144, fire);
+                    BombService.this.renderFlatRing(center.clone().add(0.0, 1.0, 0.0), Math.max(1.0, blast * 0.62), 96, hot);
+                    world.spawnParticle(Particle.SMOKE_LARGE, center.clone().add(0.0, 1.0, 0.0), 14, blast * 0.18, 0.8, blast * 0.18, 0.025);
+                    if (this.tick % 12 == 0) {
+                        world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 0.55f + (float)blastProgress * 0.35f);
+                    }
+                }
+                if (this.tick >= 8) {
+                    BombService.this.renderFlatRing(center.clone().add(0.0, 0.55, 0.0), rad, 160, radiation);
+                    if (this.tick % 8 == 0) {
+                        world.spawnParticle(Particle.REDSTONE, center.clone().add(0.0, 1.2, 0.0), 24, Math.min(90.0, rad * 0.3), 0.5, Math.min(90.0, rad * 0.3), 0.0, (Object)radiation);
+                    }
+                }
+                this.tick += 2;
+            }
+        }.runTaskTimer((Plugin)this.plugin, 0L, 2L);
+    }
+
+    private void renderFlatRing(Location center, double radius, int points, Particle.DustOptions dust) {
+        World world = center.getWorld();
+        if (world == null || radius <= 0.0) {
+            return;
+        }
+        int normalizedPoints = Math.max(16, points);
+        for (int i = 0; i < normalizedPoints; ++i) {
+            double angle = Math.PI * 2.0 / (double)normalizedPoints * (double)i;
+            double x = Math.cos(angle) * radius;
+            double z = Math.sin(angle) * radius;
+            world.spawnParticle(Particle.REDSTONE, center.clone().add(x, 0.0, z), 1, 0.0, 0.0, 0.0, 0.0, (Object)dust);
         }
     }
 
@@ -379,34 +439,37 @@ public final class BombService {
             int tick;
 
             public void run() {
-                if (this.tick > 90) {
+                if (this.tick > 150) {
                     this.cancel();
                     return;
                 }
-                double progress = Math.min(1.0, (double)this.tick / 90.0);
+                double progress = Math.min(1.0, (double)this.tick / 150.0);
                 double stemHeight = nuclear.mushroomHeight() * Math.min(1.0, progress * 1.2);
                 double capRadius = nuclear.mushroomRadius() * Math.min(1.0, progress * 1.35);
                 Particle.DustOptions hot = new Particle.DustOptions(Color.fromRGB((int)255, (int)150, (int)45), 1.5f);
                 Particle.DustOptions dark = new Particle.DustOptions(Color.fromRGB((int)95, (int)80, (int)60), 1.8f);
-                for (double y = 0.0; y <= stemHeight; y += 2.4) {
-                    double wobble = Math.sin((double)this.tick * 0.12 + y) * 0.45;
+                for (double y = 0.0; y <= stemHeight; y += 3.4) {
+                    double wobble = Math.sin((double)this.tick * 0.12 + y) * 1.15;
                     Location stem = center.clone().add(wobble, y, -wobble);
-                    world.spawnParticle(Particle.SMOKE_LARGE, stem, 8, 1.15, 0.7, 1.15, 0.02);
-                    world.spawnParticle(Particle.REDSTONE, stem, 2, 0.6, 0.35, 0.6, 0.0, (Object)hot);
+                    world.spawnParticle(Particle.SMOKE_LARGE, stem, 12, 2.2, 1.0, 2.2, 0.025);
+                    world.spawnParticle(Particle.REDSTONE, stem, 3, 1.0, 0.45, 1.0, 0.0, (Object)hot);
                 }
                 Location capCenter = center.clone().add(0.0, stemHeight, 0.0);
-                for (int i = 0; i < 48; ++i) {
-                    double angle = Math.PI * 2.0 / 48.0 * (double)i + (double)this.tick * 0.03;
+                for (int i = 0; i < 112; ++i) {
+                    double angle = Math.PI * 2.0 / 112.0 * (double)i + (double)this.tick * 0.03;
                     double ringRadius = capRadius * (0.55 + 0.45 * Math.sin((double)i * 0.7 + progress));
                     double x = Math.cos(angle) * ringRadius;
                     double z = Math.sin(angle) * ringRadius;
-                    double y = Math.sin(angle * 2.0) * 1.2;
+                    double y = Math.sin(angle * 2.0) * 2.4;
                     Location cap = capCenter.clone().add(x, y, z);
-                    world.spawnParticle(Particle.SMOKE_LARGE, cap, 4, 0.7, 0.45, 0.7, 0.015);
-                    world.spawnParticle(Particle.CLOUD, cap, 2, 0.55, 0.25, 0.55, 0.01);
+                    world.spawnParticle(Particle.SMOKE_LARGE, cap, 5, 1.15, 0.55, 1.15, 0.018);
+                    world.spawnParticle(Particle.CLOUD, cap, 3, 0.85, 0.35, 0.85, 0.012);
                     if (i % 4 == 0) {
                         world.spawnParticle(Particle.REDSTONE, cap, 1, 0.0, 0.0, 0.0, 0.0, (Object)dark);
                     }
+                }
+                if (this.tick % 6 == 0) {
+                    BombService.this.renderFlatRing(capCenter, Math.max(4.0, capRadius * 0.9), 96, dark);
                 }
                 if (this.tick % 12 == 0) {
                     world.playSound(capCenter, Sound.BLOCK_FIRE_EXTINGUISH, 0.45f, 0.65f);
@@ -428,14 +491,12 @@ public final class BombService {
             return;
         }
         Particle.DustOptions glow = new Particle.DustOptions(Color.fromRGB((int)115, (int)255, (int)60), 1.35f);
-        for (double ring = radius * 0.35; ring <= radius; ring += Math.max(2.0, radius * 0.18)) {
-            for (int i = 0; i < 64; ++i) {
-                double angle = Math.PI * 2.0 / 64.0 * (double)i;
-                double x = Math.cos(angle) * ring;
-                double z = Math.sin(angle) * ring;
-                world.spawnParticle(Particle.REDSTONE, center.clone().add(x, 0.25, z), 1, 0.0, 0.0, 0.0, 0.0, (Object)glow);
-            }
+        Particle.DustOptions edge = new Particle.DustOptions(Color.fromRGB((int)180, (int)255, (int)90), 1.7f);
+        for (double ring = radius * 0.18; ring <= radius; ring += Math.max(22.0, radius * 0.11)) {
+            this.renderFlatRing(center.clone().add(0.0, 0.25, 0.0), ring, 144, glow);
         }
+        this.renderFlatRing(center.clone().add(0.0, 0.65, 0.0), radius, 192, edge);
+        world.spawnParticle(Particle.REDSTONE, center.clone().add(0.0, 1.0, 0.0), 80, Math.min(120.0, radius * 0.28), 0.8, Math.min(120.0, radius * 0.28), 0.0, (Object)glow);
     }
 
     private void runMegaSequence(final Location origin, final Settings.BombTier tier, final UUID ownerUuid) {
