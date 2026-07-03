@@ -285,8 +285,22 @@ TabCompleter {
         if (!player.hasPermission("protectionstones.give")) {
             return true;
         }
+        if (args.length < 2) {
+            player.sendMessage(this.plugin.getMessageService().component("&7/lr give <core|book|bomb|radkit> <value/player> [book-level/player] [player]"));
+            return true;
+        }
+        if ("radkit".equalsIgnoreCase(args[1]) || "radiation".equalsIgnoreCase(args[1]) || "radiationkit".equalsIgnoreCase(args[1])) {
+            Player target = args.length >= 3 ? Bukkit.getPlayerExact((String)args[2]) : player;
+            if (target == null) {
+                player.sendMessage(this.plugin.getMessageService().component("&c\u0418\u0433\u0440\u043e\u043a \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d"));
+                return true;
+            }
+            this.plugin.getItemService().createRadiationSuit().forEach(stack -> target.getInventory().addItem(new ItemStack[]{stack}));
+            this.plugin.getMessageService().send(player, "given-item", Map.of("item", "\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0439 \u043a\u043e\u043c\u043f\u043b\u0435\u043a\u0442"));
+            return true;
+        }
         if (args.length < 3) {
-            player.sendMessage(this.plugin.getMessageService().component("&7/lr give <core|book|bomb> <value> [book-level/player] [player]"));
+            player.sendMessage(this.plugin.getMessageService().component("&7/lr give <core|book|bomb|radkit> <value/player> [book-level/player] [player]"));
             return true;
         }
         ItemStack stack = null;
@@ -356,7 +370,8 @@ TabCompleter {
         if (player.hasPermission("protectionstones.give")) {
             player.sendMessage(this.plugin.getMessageService().component("&7/lr give core <tier> [book-level] [player]"));
             player.sendMessage(this.plugin.getMessageService().component("&7/lr give book <1-5> [player]"));
-            player.sendMessage(this.plugin.getMessageService().component("&7/lr give bomb <1-6> [player]"));
+            player.sendMessage(this.plugin.getMessageService().component("&7/lr give bomb <1-10> [player]"));
+            player.sendMessage(this.plugin.getMessageService().component("&7/lr give radkit [player]"));
         }
     }
 
@@ -407,6 +422,7 @@ TabCompleter {
             completions.add("core");
             completions.add("book");
             completions.add("bomb");
+            completions.add("radkit");
         } else if (args.length == 3 && "give".equalsIgnoreCase(args[0])) {
             if ("core".equalsIgnoreCase(args[1])) {
                 completions.addAll(this.plugin.getSettings().protectionTiers().keySet());
@@ -414,6 +430,8 @@ TabCompleter {
                 completions.addAll(List.of("1", "2", "3", "4", "5"));
             } else if ("bomb".equalsIgnoreCase(args[1])) {
                 completions.addAll(this.plugin.getSettings().bombTiers().keySet().stream().map(String::valueOf).toList());
+            } else if ("radkit".equalsIgnoreCase(args[1])) {
+                completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList());
             }
         } else if (args.length == 4 && "give".equalsIgnoreCase(args[0]) && "core".equalsIgnoreCase(args[1])) {
             completions.addAll(List.of("1", "2", "3", "4", "5"));

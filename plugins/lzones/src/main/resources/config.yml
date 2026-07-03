@@ -176,6 +176,7 @@ explosive:
     radiation-duration-seconds: 360
     radiation-expansion-seconds: 2400
     exposure-per-second: 1.0
+    radiation-suit-exposure-multiplier: 0.30
     safe-decay-per-second: 0.35
     damage-threshold: 12.0
     damage-per-second: 1.5

@@ -14,6 +14,7 @@
  */
 package me.ruslan.protectionstones.service;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -23,11 +24,14 @@ import java.util.OptionalInt;
 import java.util.Set;
 import me.ruslan.protectionstones.ProtectionStonesPlugin;
 import me.ruslan.protectionstones.config.Settings;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -80,6 +84,24 @@ public final class ItemService {
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(this.kindKey, PersistentDataType.STRING, "zone_book");
         pdc.set(this.levelKey, PersistentDataType.INTEGER, normalizedLevel);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public List<ItemStack> createRadiationSuit() {
+        return List.of(this.createRadiationSuitPiece(Material.LEATHER_HELMET, "\u00a7a\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0439 \u0448\u043b\u0435\u043c"), this.createRadiationSuitPiece(Material.LEATHER_CHESTPLATE, "\u00a7a\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f \u043a\u0443\u0440\u0442\u043a\u0430"), this.createRadiationSuitPiece(Material.LEATHER_LEGGINGS, "\u00a7a\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0435 \u0448\u0442\u0430\u043d\u044b"), this.createRadiationSuitPiece(Material.LEATHER_BOOTS, "\u00a7a\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u043e\u043d\u043d\u044b\u0435 \u0431\u043e\u0442\u0438\u043d\u043a\u0438"));
+    }
+
+    private ItemStack createRadiationSuitPiece(Material material, String name) {
+        ItemStack item = new ItemStack(material);
+        LeatherArmorMeta meta = (LeatherArmorMeta)item.getItemMeta();
+        meta.setColor(Color.fromRGB((int)110, (int)190, (int)65));
+        meta.setDisplayName(name);
+        meta.setLore(List.of("\u00a77\u041a\u043e\u043c\u043f\u043b\u0435\u043a\u0442 \u043e\u0442 \u0440\u0430\u0434\u0438\u0430\u0446\u0438\u0438 LZones", "\u00a77\u041d\u0435 \u0443\u0431\u0438\u0440\u0430\u0435\u0442 \u0438\u0437\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u043d\u043e\u0441\u0442\u044c\u044e", "\u00a77\u041f\u043e\u043b\u043d\u044b\u0439 \u0441\u0435\u0442: \u00a7f" + (int)Math.round(this.plugin.getSettings().radiationSuitExposureMultiplier() * 100.0) + "% \u00a77\u0441\u043a\u043e\u0440\u043e\u0441\u0442\u0438 \u043e\u0431\u043b\u0443\u0447\u0435\u043d\u0438\u044f"));
+        this.applyEnchant(meta, "protection", 4, "radiation suit");
+        meta.addItemFlags(new ItemFlag[]{ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_DYE});
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        pdc.set(this.kindKey, PersistentDataType.STRING, "radiation_suit");
         item.setItemMeta(meta);
         return item;
     }
@@ -173,6 +195,30 @@ public final class ItemService {
         return level == null ? Optional.empty() : this.plugin.getSettings().bombTier(level);
     }
 
+    public boolean isRadiationSuitPiece(ItemStack item) {
+        if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
+            return false;
+        }
+        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
+        return "radiation_suit".equals(pdc.get(this.kindKey, PersistentDataType.STRING));
+    }
+
+    public int radiationSuitPieces(Player player) {
+        if (player == null) {
+            return 0;
+        }
+        return (int)Arrays.stream(player.getInventory().getArmorContents()).filter(this::isRadiationSuitPiece).count();
+    }
+
+    public double radiationExposureMultiplier(Player player) {
+        int pieces = this.radiationSuitPieces(player);
+        if (pieces <= 0) {
+            return 1.0;
+        }
+        double fullSetMultiplier = this.plugin.getSettings().radiationSuitExposureMultiplier();
+        return Math.pow(fullSetMultiplier, (double)Math.min(4, pieces) / 4.0);
+    }
+
     public boolean looksLikeCoreMaterial(ItemStack item) {
         if (item == null || item.getType().isAir()) {
             return false;
@@ -192,6 +238,9 @@ public final class ItemService {
         OptionalInt bookLevel = this.zoneBookLevel(item);
         if (bookLevel.isPresent()) {
             return "\u041a\u043d\u0438\u0433\u0430 \u0437\u043e\u043d\u044b " + this.roman(bookLevel.getAsInt());
+        }
+        if (this.isRadiationSuitPiece(item)) {
+            return "\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u043e\u043d\u043d\u0430\u044f \u0431\u0440\u043e\u043d\u044f";
         }
         Optional<Settings.BombTier> bombTier = this.bombTier(item);
         if (bombTier.isPresent()) {

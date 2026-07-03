@@ -37,4 +37,5 @@ Custom changes:
 - Added nuclear TNT profiles for levels 6-10: Fat Man+ (24 kt), Castle Bravo (15 Mt), Tsar Bomba (50 Mt), Tsar Bomba MAX (100 Mt), and forbidden World Eater (1000 Mt).
 - Level 10 TNT now requires a second placement confirmation within 15 seconds and starts a staged world-eater effect after detonation.
 - Radiation severity now scales by distance to the blast center and applies nausea plus darkness while players remain contaminated.
+- Added radiation armor kit via `/lr give radkit [player]`; a full set still lets exposure build up, but slows it to `explosive.nuclear.radiation-suit-exposure-multiplier` (default `0.30`).
 - Added `/tntshop` for buying TNT bombs level 1-5 through Vault economy with configurable prices.

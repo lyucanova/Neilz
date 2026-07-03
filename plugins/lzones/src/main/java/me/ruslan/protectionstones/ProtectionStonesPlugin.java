@@ -182,6 +182,7 @@ extends JavaPlugin {
         changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", -1, 360);
         changed |= this.setIfMissing("explosive.nuclear.radiation-expansion-seconds", 2400);
         changed |= this.setIfMissing("explosive.nuclear.exposure-per-second", 1.0);
+        changed |= this.setIfMissing("explosive.nuclear.radiation-suit-exposure-multiplier", 0.30);
         changed |= this.setIfMissing("explosive.nuclear.safe-decay-per-second", 0.35);
         changed |= this.setIfMissing("explosive.nuclear.damage-threshold", 12.0);
         changed |= this.setIfMissing("explosive.nuclear.damage-per-second", 1.5);

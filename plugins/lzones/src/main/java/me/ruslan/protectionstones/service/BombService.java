@@ -278,11 +278,12 @@ public final class BombService {
             }
             exposedPlayers.add(uuid);
             double intensity = zone.intensityAt(player.getLocation(), now);
-            double exposureGain = nuclear.exposurePerSecond() * (0.45 + intensity * 3.55);
+            double suitMultiplier = this.plugin.getItemService().radiationExposureMultiplier(player);
+            double exposureGain = nuclear.exposurePerSecond() * (0.45 + intensity * 3.55) * suitMultiplier;
             double dose = Math.min(nuclear.damageThreshold() * 5.0, this.radiationExposure.getOrDefault(uuid, 0.0) + exposureGain);
             this.radiationExposure.put(uuid, dose);
             this.applyRadiationEffects(player, intensity);
-            this.renderRadiationTick(player, zone, dose, nuclear, intensity);
+            this.renderRadiationTick(player, zone, dose, nuclear, intensity, suitMultiplier);
             if (dose >= nuclear.damageThreshold()) {
                 double damage = nuclear.damagePerSecond() * (0.75 + intensity * 3.75);
                 player.damage(damage);
@@ -324,7 +325,7 @@ public final class BombService {
         player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, Math.max(70, duration - 10), darknessAmplifier, false, true, true));
     }
 
-    private void renderRadiationTick(Player player, RadiationZone zone, double dose, Settings.NuclearBombSettings nuclear, double intensity) {
+    private void renderRadiationTick(Player player, RadiationZone zone, double dose, Settings.NuclearBombSettings nuclear, double intensity, double suitMultiplier) {
         Location location = player.getLocation().clone().add(0.0, 1.0, 0.0);
         World world = location.getWorld();
         if (world == null) {
@@ -337,6 +338,9 @@ public final class BombService {
         world.spawnParticle(Particle.SMOKE_LARGE, location, 2 + (int)Math.round(intensity * 5.0), 0.35 + intensity * 0.35, 0.35, 0.35 + intensity * 0.35, 0.01);
         if (dose >= nuclear.damageThreshold()) {
             world.spawnParticle(Particle.REDSTONE, location, 4 + (int)Math.round(intensity * 8.0), 0.25, 0.45, 0.25, 0.0, (Object)new Particle.DustOptions(Color.fromRGB((int)255, (int)40, (int)40), 1.1f + (float)intensity));
+        }
+        if (suitMultiplier < 1.0) {
+            world.spawnParticle(Particle.REDSTONE, location.clone().add(0.0, 0.2, 0.0), 5, 0.42, 0.55, 0.42, 0.0, (Object)new Particle.DustOptions(Color.fromRGB((int)40, (int)210, (int)95), 0.95f));
         }
         Location center = zone.center();
         double currentRadius = zone.currentRadius(System.currentTimeMillis());
