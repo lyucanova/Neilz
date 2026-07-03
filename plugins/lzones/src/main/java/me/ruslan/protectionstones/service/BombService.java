@@ -55,6 +55,8 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
@@ -246,11 +248,15 @@ public final class BombService {
                 continue;
             }
             exposedPlayers.add(uuid);
-            double dose = Math.min(nuclear.damageThreshold() * 3.0, this.radiationExposure.getOrDefault(uuid, 0.0) + nuclear.exposurePerSecond());
+            double intensity = zone.intensityAt(player.getLocation(), now);
+            double exposureGain = nuclear.exposurePerSecond() * (0.45 + intensity * 3.55);
+            double dose = Math.min(nuclear.damageThreshold() * 5.0, this.radiationExposure.getOrDefault(uuid, 0.0) + exposureGain);
             this.radiationExposure.put(uuid, dose);
-            this.renderRadiationTick(player, zone, dose, nuclear);
+            this.applyRadiationEffects(player, intensity);
+            this.renderRadiationTick(player, zone, dose, nuclear, intensity);
             if (dose >= nuclear.damageThreshold()) {
-                player.damage(nuclear.damagePerSecond());
+                double damage = nuclear.damagePerSecond() * (0.75 + intensity * 3.75);
+                player.damage(damage);
                 this.plugin.getMessageService().actionBar(player, "radiation-damage", "radiation-damage", Map.of("dose", this.formatDose(dose), "threshold", this.formatDose(nuclear.damageThreshold())));
             } else {
                 this.plugin.getMessageService().actionBar(player, "radiation-warning", "radiation-warning", Map.of("dose", this.formatDose(dose), "threshold", this.formatDose(nuclear.damageThreshold())));
@@ -281,18 +287,27 @@ public final class BombService {
         return null;
     }
 
-    private void renderRadiationTick(Player player, RadiationZone zone, double dose, Settings.NuclearBombSettings nuclear) {
+    private void applyRadiationEffects(Player player, double intensity) {
+        int nauseaAmplifier = intensity >= 0.72 ? 1 : 0;
+        int darknessAmplifier = intensity >= 0.88 ? 1 : 0;
+        int duration = 80 + (int)Math.round(intensity * 80.0);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION, duration, nauseaAmplifier, false, true, true));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, Math.max(70, duration - 10), darknessAmplifier, false, true, true));
+    }
+
+    private void renderRadiationTick(Player player, RadiationZone zone, double dose, Settings.NuclearBombSettings nuclear, double intensity) {
         Location location = player.getLocation().clone().add(0.0, 1.0, 0.0);
         World world = location.getWorld();
         if (world == null) {
             return;
         }
-        float size = dose >= nuclear.damageThreshold() ? 1.25f : 0.9f;
+        float size = (float)(0.9 + intensity * 1.25 + (dose >= nuclear.damageThreshold() ? 0.35 : 0.0));
         Particle.DustOptions glow = new Particle.DustOptions(Color.fromRGB((int)120, (int)255, (int)70), size);
-        world.spawnParticle(Particle.REDSTONE, location, 8, 0.55, 0.7, 0.55, 0.0, (Object)glow);
-        world.spawnParticle(Particle.SMOKE_LARGE, location, 2, 0.35, 0.35, 0.35, 0.01);
+        int particles = 6 + (int)Math.round(intensity * 16.0);
+        world.spawnParticle(Particle.REDSTONE, location, particles, 0.55 + intensity * 0.55, 0.7, 0.55 + intensity * 0.55, 0.0, (Object)glow);
+        world.spawnParticle(Particle.SMOKE_LARGE, location, 2 + (int)Math.round(intensity * 5.0), 0.35 + intensity * 0.35, 0.35, 0.35 + intensity * 0.35, 0.01);
         if (dose >= nuclear.damageThreshold()) {
-            world.spawnParticle(Particle.REDSTONE, location, 4, 0.25, 0.45, 0.25, 0.0, (Object)new Particle.DustOptions(Color.fromRGB((int)255, (int)40, (int)40), 1.1f));
+            world.spawnParticle(Particle.REDSTONE, location, 4 + (int)Math.round(intensity * 8.0), 0.25, 0.45, 0.25, 0.0, (Object)new Particle.DustOptions(Color.fromRGB((int)255, (int)40, (int)40), 1.1f + (float)intensity));
         }
         Location center = zone.center();
         double currentRadius = zone.currentRadius(System.currentTimeMillis());
@@ -1000,6 +1015,18 @@ public final class BombService {
             double dz = location.getZ() - this.z;
             double radius = this.currentRadius(now);
             return dx * dx + dz * dz <= radius * radius;
+        }
+
+        double intensityAt(Location location, long now) {
+            if (location == null || location.getWorld() == null || !this.worldName.equals(location.getWorld().getName())) {
+                return 0.0;
+            }
+            double radius = Math.max(1.0, this.currentRadius(now));
+            double dx = location.getX() - this.x;
+            double dz = location.getZ() - this.z;
+            double distance = Math.sqrt(dx * dx + dz * dz);
+            double normalized = Math.max(0.0, Math.min(1.0, 1.0 - distance / radius));
+            return 0.15 + normalized * 0.85;
         }
 
         boolean expired(long now) {
