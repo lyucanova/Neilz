@@ -86,9 +86,16 @@ public final class ItemService {
     public ItemStack createBomb(Settings.BombTier tier) {
         ItemStack item = new ItemStack(tier.itemMaterial());
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("\u00a7c\u041e\u0441\u0430\u0434\u043d\u0430\u044f \u0441\u0444\u0435\u0440\u0430 \u00a7f" + this.roman(tier.level()));
-        meta.setLore(List.of("\u00a77\u041c\u043e\u0449\u043d\u043e\u0441\u0442\u044c: \u00a7f" + tier.power(), "\u00a77\u0423\u0434\u0430\u0440\u043e\u0432 \u043f\u043e \u044f\u0434\u0440\u0443: \u00a7f" + tier.coreHits(), "\u00a77\u0411\u0435\u0437 \u043e\u043f\u043e\u0440\u044b \u043f\u0430\u0434\u0430\u0435\u0442 \u0432\u043d\u0438\u0437 \u043a\u0430\u043a \u0441\u043d\u0430\u0440\u044f\u0434", "\u00a77\u0412 \u042d\u043d\u0434\u0435 \u0432\u0437\u043b\u0435\u0442\u0430\u0435\u0442 \u0438 \u0431\u044c\u0451\u0442 \u0432 \u0434\u0432\u0430 \u0440\u0430\u0437\u0430 \u0441\u0438\u043b\u044c\u043d\u0435\u0435"));
-        this.applyEnchant(meta, "fire_aspect", tier.level(), "explosive core");
+        if (tier.level() == 6) {
+            Settings.NuclearBombSettings nuclear = this.plugin.getSettings().nuclearBombSettings();
+            meta.setDisplayName("\u00a74\u042f\u0434\u0435\u0440\u043d\u0430\u044f \u0431\u043e\u043c\u0431\u0430 \u00a7c\u26a0");
+            meta.setLore(List.of("\u00a77\u041c\u043e\u0449\u043d\u043e\u0441\u0442\u044c: \u00a7f" + tier.power(), "\u00a77\u0423\u0434\u0430\u0440\u043e\u0432 \u043f\u043e \u044f\u0434\u0440\u0443: \u00a7f" + tier.coreHits(), "\u00a77\u0420\u0430\u0434\u0438\u0443\u0441 \u0432\u0437\u0440\u044b\u0432\u0430: \u00a7f" + (int)nuclear.blastRadius(), "\u00a77\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u044f: \u00a7f" + (int)nuclear.radiationRadius() + "\u00a77 \u0431\u043b\u043e\u043a\u043e\u0432, \u00a7f" + nuclear.radiationDurationSeconds() + "\u00a77 \u0441\u0435\u043a.", "\u00a77\u041f\u043e\u0441\u043b\u0435 \u0432\u0437\u0440\u044b\u0432\u0430 \u043e\u0441\u0442\u0430\u0432\u043b\u044f\u0435\u0442 \u043a\u0440\u0430\u0442\u0435\u0440 \u0438 \u0433\u0440\u0438\u0431", "\u00a77\u0412 \u0447\u0443\u0436\u043e\u043c \u0440\u0435\u0433\u0438\u043e\u043d\u0435 \u0441\u0442\u0430\u0432\u0438\u0442\u044c \u043d\u0435\u043b\u044c\u0437\u044f"));
+            this.applyEnchant(meta, "fire_aspect", 6, "nuclear explosive core");
+        } else {
+            meta.setDisplayName("\u00a7c\u041e\u0441\u0430\u0434\u043d\u0430\u044f \u0441\u0444\u0435\u0440\u0430 \u00a7f" + this.roman(tier.level()));
+            meta.setLore(List.of("\u00a77\u041c\u043e\u0449\u043d\u043e\u0441\u0442\u044c: \u00a7f" + tier.power(), "\u00a77\u0423\u0434\u0430\u0440\u043e\u0432 \u043f\u043e \u044f\u0434\u0440\u0443: \u00a7f" + tier.coreHits(), "\u00a77\u0411\u0435\u0437 \u043e\u043f\u043e\u0440\u044b \u043f\u0430\u0434\u0430\u0435\u0442 \u0432\u043d\u0438\u0437 \u043a\u0430\u043a \u0441\u043d\u0430\u0440\u044f\u0434", "\u00a77\u0412 \u042d\u043d\u0434\u0435 \u0432\u0437\u043b\u0435\u0442\u0430\u0435\u0442 \u0438 \u0431\u044c\u0451\u0442 \u0432 \u0434\u0432\u0430 \u0440\u0430\u0437\u0430 \u0441\u0438\u043b\u044c\u043d\u0435\u0435"));
+            this.applyEnchant(meta, "fire_aspect", tier.level(), "explosive core");
+        }
         meta.addItemFlags(new ItemFlag[]{ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS});
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(this.kindKey, PersistentDataType.STRING, "explosive_core");
@@ -169,7 +176,11 @@ public final class ItemService {
         }
         Optional<Settings.BombTier> bombTier = this.bombTier(item);
         if (bombTier.isPresent()) {
-            return "\u041e\u0441\u0430\u0434\u043d\u0430\u044f \u0441\u0444\u0435\u0440\u0430 " + this.roman(bombTier.orElseThrow().level());
+            Settings.BombTier tier = bombTier.orElseThrow();
+            if (tier.level() == 6) {
+                return "\u042f\u0434\u0435\u0440\u043d\u0430\u044f \u0431\u043e\u043c\u0431\u0430 " + this.roman(tier.level());
+            }
+            return "\u041e\u0441\u0430\u0434\u043d\u0430\u044f \u0441\u0444\u0435\u0440\u0430 " + this.roman(tier.level());
         }
         return item.getType().name().toLowerCase(Locale.ROOT);
     }

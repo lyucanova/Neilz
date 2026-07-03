@@ -87,6 +87,7 @@ extends JavaPlugin {
                 this.outlineService.renderPlacementPreview(player);
             }
         }, 10L, Math.max(2L, (long)this.settings.outlineSettings().previewIntervalTicks()));
+        this.getServer().getScheduler().runTaskTimer((Plugin)this, this.bombService::tickRadiation, 20L, 20L);
         this.getLogger().info("LZones " + this.getDescription().getVersion() + " enabled");
     }
 
@@ -116,6 +117,27 @@ extends JavaPlugin {
         changed |= this.migrateDouble("explosive.levels.3.power", 8.0, 6.0);
         changed |= this.migrateDouble("explosive.levels.4.power", 10.0, 8.0);
         changed |= this.migrateDouble("explosive.levels.5.power", 14.0, 12.0);
+        changed |= this.setIfMissing("explosive.levels.6.item", "TNT");
+        changed |= this.setIfMissing("explosive.levels.6.power", 18.0);
+        changed |= this.setIfMissing("explosive.levels.6.core-hits", 14);
+        changed |= this.setIfMissing("explosive.nuclear.charge-ticks", 100);
+        changed |= this.setIfMissing("explosive.nuclear.blast-radius", 30.0);
+        changed |= this.setIfMissing("explosive.nuclear.explosion-power", 18.0);
+        changed |= this.setIfMissing("explosive.nuclear.crater-radius", 10);
+        changed |= this.setIfMissing("explosive.nuclear.crater-depth", 5);
+        changed |= this.setIfMissing("explosive.nuclear.mushroom-height", 36.0);
+        changed |= this.setIfMissing("explosive.nuclear.mushroom-radius", 13.0);
+        changed |= this.setIfMissing("explosive.nuclear.radiation-radius", 28.0);
+        changed |= this.setIfMissing("explosive.nuclear.radiation-duration-seconds", 180);
+        changed |= this.setIfMissing("explosive.nuclear.exposure-per-second", 1.0);
+        changed |= this.setIfMissing("explosive.nuclear.safe-decay-per-second", 0.35);
+        changed |= this.setIfMissing("explosive.nuclear.damage-threshold", 12.0);
+        changed |= this.setIfMissing("explosive.nuclear.damage-per-second", 1.5);
+        changed |= this.setIfMissing("explosive.nuclear.core-shockwave-radius", 34.0);
+        changed |= this.setIfMissing("messages.nuclear-arming", "&4⚠ Ядерная бомба: детонация через &f{seconds}&4 сек.");
+        changed |= this.setIfMissing("messages.nuclear-detonated", "&4⚠ Ядерный взрыв. В кратере радиация!");
+        changed |= this.setIfMissing("messages.radiation-warning", "&e⚠ Радиация: облучение &f{dose}/{threshold}");
+        changed |= this.setIfMissing("messages.radiation-damage", "&c⚠ Критическое облучение: &f{dose}/{threshold}");
         changed |= this.setIfMissing("messages.member-added", "&aИгрок &f{player}&a добавлен в регион &f{region}&a. Участников: &f{count}/{max}");
         changed |= this.setIfMissing("messages.member-already-added", "&eИгрок &f{player}&e уже добавлен в этот регион.");
         changed |= this.setIfMissing("messages.member-owner", "&eВладелец уже имеет полный доступ к региону.");

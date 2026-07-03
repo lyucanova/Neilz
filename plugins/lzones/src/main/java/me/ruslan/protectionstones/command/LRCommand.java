@@ -356,7 +356,7 @@ TabCompleter {
         if (player.hasPermission("protectionstones.give")) {
             player.sendMessage(this.plugin.getMessageService().component("&7/lr give core <tier> [book-level] [player]"));
             player.sendMessage(this.plugin.getMessageService().component("&7/lr give book <1-5> [player]"));
-            player.sendMessage(this.plugin.getMessageService().component("&7/lr give bomb <1-5> [player]"));
+            player.sendMessage(this.plugin.getMessageService().component("&7/lr give bomb <1-6> [player]"));
         }
     }
 
