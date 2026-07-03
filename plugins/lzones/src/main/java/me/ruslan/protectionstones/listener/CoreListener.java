@@ -77,6 +77,12 @@ implements Listener {
         }
         Optional<Settings.BombTier> bombTier = this.plugin.getItemService().bombTier(item);
         if (bombTier.isPresent()) {
+            Optional<Region> bombRegion = this.plugin.getRegionService().regionAt(block.getLocation());
+            if (bombRegion.isPresent() && !this.canBuild(player, bombRegion.orElseThrow())) {
+                event.setCancelled(true);
+                this.plugin.getMessageService().actionBar(player, "place-denied", "cannot-place", Map.of());
+                return;
+            }
             this.plugin.getBombService().arm(player, block.getLocation(), bombTier.orElseThrow());
             return;
         }

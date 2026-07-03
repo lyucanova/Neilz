@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import me.ruslan.protectionstones.ProtectionStonesPlugin;
 import me.ruslan.protectionstones.config.Settings;
@@ -98,6 +99,15 @@ public final class BombService {
             return;
         }
         Location landed = event.getBlock().getLocation();
+        if (!this.canBombOccupy(fallingBomb.ownerUuid(), landed)) {
+            event.setCancelled(true);
+            fallingBlock.remove();
+            Player owner = Bukkit.getPlayer((UUID)fallingBomb.ownerUuid());
+            if (owner != null) {
+                this.plugin.getMessageService().actionBar(owner, "place-denied", "cannot-place", Map.of());
+            }
+            return;
+        }
         this.plugin.getServer().getScheduler().runTask((Plugin)this.plugin, () -> this.startCountdown(new PendingBomb(this.key(landed), fallingBomb.ownerUuid(), landed.clone(), fallingBomb.tier().level(), fallingBomb.tier().power())));
     }
 
@@ -473,6 +483,11 @@ public final class BombService {
 
     private double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private boolean canBombOccupy(UUID ownerUuid, Location location) {
+        Optional<Region> region = this.plugin.getRegionService().regionAt(location);
+        return region.isEmpty() || region.orElseThrow().canBuild(ownerUuid);
     }
 
     private boolean shouldFall(Location location) {
