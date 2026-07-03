@@ -161,9 +161,10 @@ public final class BombService {
         this.animateFinalWave(location, Math.max(1.0, (double)bomb.level() * 2.2));
         Player owner = Bukkit.getPlayer((UUID)bomb.ownerUuid());
         world.playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 1.2f, 0.9f);
-        world.createExplosion(location.clone().add(0.5, 0.5, 0.5), bomb.power(), false, true, (Entity)owner);
+        Location explosionCenter = location.clone().add(0.5, 0.5, 0.5);
+        world.createExplosion(explosionCenter, bomb.power(), false, true, (Entity)owner);
         if (tier != null) {
-            this.applyCoreShockwave(location, Math.max(4.0, (double)bomb.power() * 1.8), tier.coreHits());
+            this.applyCoreShockwave(explosionCenter, Math.max(4.0, (double)bomb.power() * 1.8), tier.coreHits());
         }
         for (Player nearby : world.getPlayers()) {
             if (!(nearby.getLocation().distanceSquared(location) <= 576.0)) continue;
@@ -438,10 +439,9 @@ public final class BombService {
             }
             living.damage(damage);
         }
-        double maxDistanceSquared = radius * radius;
         for (Region region : this.plugin.getRegionService().allRegionsInWorld(world)) {
             Location core = region.coreLocation();
-            if (core.getWorld() == null || !(core.distanceSquared(location) <= maxDistanceSquared)) continue;
+            if (!this.coreBlockReachedByBlast(location, core, radius)) continue;
             this.plugin.getRegionService().damageCore(region, Math.max(2, tier.coreHits()));
         }
     }
@@ -451,12 +451,28 @@ public final class BombService {
         if (world == null) {
             return;
         }
-        double maxDistanceSquared = radius * radius;
         for (Region region : this.plugin.getRegionService().allRegionsInWorld(world)) {
             Location core = region.coreLocation();
-            if (core.getWorld() == null || !(core.distanceSquared(location) <= maxDistanceSquared)) continue;
+            if (!this.coreBlockReachedByBlast(location, core, radius)) continue;
             this.plugin.getRegionService().damageCore(region, coreHits);
         }
+    }
+
+    private boolean coreBlockReachedByBlast(Location blastCenter, Location coreBlock, double radius) {
+        if (blastCenter == null || coreBlock == null || blastCenter.getWorld() == null || coreBlock.getWorld() == null || !blastCenter.getWorld().equals((Object)coreBlock.getWorld())) {
+            return false;
+        }
+        double closestX = this.clamp(blastCenter.getX(), coreBlock.getBlockX(), coreBlock.getBlockX() + 1.0);
+        double closestY = this.clamp(blastCenter.getY(), coreBlock.getBlockY(), coreBlock.getBlockY() + 1.0);
+        double closestZ = this.clamp(blastCenter.getZ(), coreBlock.getBlockZ(), coreBlock.getBlockZ() + 1.0);
+        double dx = blastCenter.getX() - closestX;
+        double dy = blastCenter.getY() - closestY;
+        double dz = blastCenter.getZ() - closestZ;
+        return dx * dx + dy * dy + dz * dz <= radius * radius;
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private boolean shouldFall(Location location) {
@@ -525,4 +541,3 @@ public final class BombService {
     private record FallingBomb(UUID ownerUuid, Settings.BombTier tier) {
     }
 }
-
