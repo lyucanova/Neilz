@@ -31,4 +31,5 @@ Custom changes:
 - New owner commands: `/lr add <player> [region]`, `/lr removeplayer <player> [region]`, `/lr members [region]`.
 - Existing server configs are migrated softly: old default height/TNT values are replaced with the new defaults, while custom values are left untouched.
 - Siege bomb core damage now checks the actual 1x1x1 core block hitbox, not the whole protected region.
-- Siege bombs can no longer be placed or land inside regions where the owner has no build access.
+- Siege bombs can no longer be placed directly inside regions where the owner has no build access.
+- Falling siege bombs are allowed to land and explode inside regions after being placed outside.
