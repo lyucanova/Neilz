@@ -1,9 +1,10 @@
 name: LZones
-version: "2.2.1-custom"
+version: "2.2.2-custom"
 main: me.ruslan.protectionstones.ProtectionStonesPlugin
 api-version: "1.20"
 authors: [Ruslan, OpenAI]
 description: Custom enchanted protection cores, command-only books, siege bombs and region home teleports.
+softdepend: [Vault]
 
 commands:
   lr:
@@ -16,6 +17,11 @@ commands:
     usage: /private home [name]
     aliases: [privhome]
     permission: protectionstones.use
+  tntshop:
+    description: TNT bomb shop
+    usage: /tntshop [1-5]
+    aliases: [tshop]
+    permission: protectionstones.tntshop
 
 permissions:
   protectionstones.use:
@@ -30,3 +36,5 @@ permissions:
     default: op
   protectionstones.bomb:
     default: op
+  protectionstones.tntshop:
+    default: true

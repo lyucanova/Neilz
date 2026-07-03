@@ -19,12 +19,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import me.ruslan.protectionstones.command.LRCommand;
+import me.ruslan.protectionstones.command.TntShopCommand;
 import me.ruslan.protectionstones.config.Settings;
 import me.ruslan.protectionstones.listener.CoreListener;
 import me.ruslan.protectionstones.listener.RegionNotificationListener;
 import me.ruslan.protectionstones.listener.UpgradeMenuListener;
 import me.ruslan.protectionstones.model.Region;
 import me.ruslan.protectionstones.service.BombService;
+import me.ruslan.protectionstones.service.EconomyService;
 import me.ruslan.protectionstones.service.ItemService;
 import me.ruslan.protectionstones.service.MessageService;
 import me.ruslan.protectionstones.service.OutlineService;
@@ -47,6 +49,7 @@ extends JavaPlugin {
     private RegionService regionService;
     private OutlineService outlineService;
     private BombService bombService;
+    private EconomyService economyService;
     private RecipeService recipeService;
     private UpgradeMenuListener upgradeMenuListener;
     private final Set<UUID> adminModePlayers = new HashSet<UUID>();
@@ -60,6 +63,7 @@ extends JavaPlugin {
         this.regionService = new RegionService(this);
         this.outlineService = new OutlineService(this);
         this.bombService = new BombService(this);
+        this.economyService = new EconomyService(this);
         this.recipeService = new RecipeService(this);
         this.upgradeMenuListener = new UpgradeMenuListener(this);
         try {
@@ -77,6 +81,11 @@ extends JavaPlugin {
         if (this.getCommand("private") != null) {
             this.getCommand("private").setExecutor((CommandExecutor)lrCommand);
             this.getCommand("private").setTabCompleter((TabCompleter)lrCommand);
+        }
+        TntShopCommand tntShopCommand = new TntShopCommand(this);
+        if (this.getCommand("tntshop") != null) {
+            this.getCommand("tntshop").setExecutor((CommandExecutor)tntShopCommand);
+            this.getCommand("tntshop").setTabCompleter((TabCompleter)tntShopCommand);
         }
         this.getServer().getPluginManager().registerEvents((Listener)new CoreListener(this), (Plugin)this);
         this.getServer().getPluginManager().registerEvents((Listener)this.upgradeMenuListener, (Plugin)this);
@@ -117,6 +126,11 @@ extends JavaPlugin {
         changed |= this.migrateDouble("explosive.levels.3.power", 8.0, 6.0);
         changed |= this.migrateDouble("explosive.levels.4.power", 10.0, 8.0);
         changed |= this.migrateDouble("explosive.levels.5.power", 14.0, 12.0);
+        changed |= this.setIfMissing("shop.tnt-prices.1", 20000.0);
+        changed |= this.setIfMissing("shop.tnt-prices.2", 250000.0);
+        changed |= this.setIfMissing("shop.tnt-prices.3", 650000.0);
+        changed |= this.setIfMissing("shop.tnt-prices.4", 1000000.0);
+        changed |= this.setIfMissing("shop.tnt-prices.5", 15000000.0);
         changed |= this.setIfMissing("explosive.levels.6.item", "TNT");
         changed |= this.setIfMissing("explosive.levels.6.power", 18.0);
         changed |= this.setIfMissing("explosive.levels.6.core-hits", 14);
@@ -264,6 +278,10 @@ extends JavaPlugin {
 
     public BombService getBombService() {
         return this.bombService;
+    }
+
+    public EconomyService getEconomyService() {
+        return this.economyService;
     }
 
     public UpgradeMenuListener getUpgradeMenuListener() {

@@ -78,6 +78,14 @@ messages:
   recipe-note: "&7Новые рецепты применяются после рестарта сервера."
   home-teleport: "&bТелепортация на home региона: &f{name}"
 
+shop:
+  tnt-prices:
+    1: 20000.0
+    2: 250000.0
+    3: 650000.0
+    4: 1000000.0
+    5: 15000000.0
+
 protection:
   tiers:
     iron:
