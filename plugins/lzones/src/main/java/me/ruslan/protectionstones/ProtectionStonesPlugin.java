@@ -173,8 +173,9 @@ extends JavaPlugin {
         changed |= this.setIfMissing("explosive.nuclear.radiation-start-radius", 100.0);
         changed |= this.migrateDouble("explosive.nuclear.radiation-radius", 28.0, 200.0);
         changed |= this.migrateDouble("explosive.nuclear.radiation-radius", 300.0, 200.0);
-        changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 180, -1);
-        changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 240, -1);
+        changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 180, 360);
+        changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 240, 360);
+        changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", -1, 360);
         changed |= this.setIfMissing("explosive.nuclear.radiation-expansion-seconds", 2400);
         changed |= this.setIfMissing("explosive.nuclear.exposure-per-second", 1.0);
         changed |= this.setIfMissing("explosive.nuclear.safe-decay-per-second", 0.35);

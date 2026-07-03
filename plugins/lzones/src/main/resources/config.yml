@@ -173,7 +173,7 @@ explosive:
     mushroom-radius: 72.0
     radiation-start-radius: 100.0
     radiation-radius: 200.0
-    radiation-duration-seconds: -1
+    radiation-duration-seconds: 360
     radiation-expansion-seconds: 2400
     exposure-per-second: 1.0
     safe-decay-per-second: 0.35

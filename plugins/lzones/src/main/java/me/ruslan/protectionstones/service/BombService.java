@@ -81,13 +81,19 @@ public final class BombService {
         }
         YamlConfiguration configuration = YamlConfiguration.loadConfiguration((File)this.radiationStorageFile);
         long now = System.currentTimeMillis();
+        int configuredDurationSeconds = this.plugin.getSettings().nuclearBombSettings().radiationDurationSeconds();
         for (Map<?, ?> entry : configuration.getMapList("zones")) {
             Object worldValue = entry.get("world");
             String worldName = worldValue == null ? "" : String.valueOf(worldValue);
             if (worldName.isBlank()) {
                 continue;
             }
-            RadiationZone zone = new RadiationZone(worldName, this.doubleValue(entry.get("x"), 0.0), this.doubleValue(entry.get("y"), 0.0), this.doubleValue(entry.get("z"), 0.0), this.doubleValue(entry.get("start-radius"), 100.0), this.doubleValue(entry.get("max-radius"), 200.0), this.longValue(entry.get("created-at"), now), Math.max(1L, this.longValue(entry.get("expansion-millis"), 2400000L)), this.longValue(entry.get("expires-at"), -1L));
+            long createdAt = this.longValue(entry.get("created-at"), now);
+            long expiresAt = this.longValue(entry.get("expires-at"), -1L);
+            if (expiresAt < 0L && configuredDurationSeconds > 0) {
+                expiresAt = createdAt + (long)configuredDurationSeconds * 1000L;
+            }
+            RadiationZone zone = new RadiationZone(worldName, this.doubleValue(entry.get("x"), 0.0), this.doubleValue(entry.get("y"), 0.0), this.doubleValue(entry.get("z"), 0.0), this.doubleValue(entry.get("start-radius"), 100.0), this.doubleValue(entry.get("max-radius"), 200.0), createdAt, Math.max(1L, this.longValue(entry.get("expansion-millis"), 2400000L)), expiresAt);
             if (zone.expired(now)) {
                 continue;
             }

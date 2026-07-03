@@ -33,6 +33,6 @@ Custom changes:
 - Siege bomb core damage now checks the actual 1x1x1 core block hitbox, not the whole protected region.
 - Siege bombs can no longer be placed directly inside regions where the owner has no build access.
 - Falling siege bombs are allowed to land and explode inside regions after being placed outside.
-- Added level 6 nuclear bomb (`/lr give bomb 6`) with 24-kiloton yield, large charge animation without attraction, stronger expanding knockback shockwave, mushroom cloud, protected-region-safe vertical crater carving, 180-block blast reach, persistent radiation expanding from 100 to 200 blocks, exposure buildup, and damage after the configured threshold.
+- Added level 6 nuclear bomb (`/lr give bomb 6`) with 24-kiloton yield, large charge animation without attraction, stronger expanding knockback shockwave, mushroom cloud, protected-region-safe vertical crater carving, 180-block blast reach, 360-second radiation expanding from 100 to 200 blocks, exposure buildup, and damage after the configured threshold.
 - Radiation severity now scales by distance to the blast center and applies nausea plus darkness while players remain contaminated.
 - Added `/tntshop` for buying TNT bombs level 1-5 through Vault economy with configurable prices.
