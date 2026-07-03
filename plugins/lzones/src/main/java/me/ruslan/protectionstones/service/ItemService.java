@@ -14,6 +14,7 @@
  */
 package me.ruslan.protectionstones.service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -86,12 +87,29 @@ public final class ItemService {
     public ItemStack createBomb(Settings.BombTier tier) {
         ItemStack item = new ItemStack(tier.itemMaterial());
         ItemMeta meta = item.getItemMeta();
-        if (tier.level() == 6) {
+        if (tier.level() >= 6) {
             Settings.NuclearBombSettings nuclear = this.plugin.getSettings().nuclearBombSettings();
+            Settings.NuclearTierSettings profile = this.plugin.getSettings().nuclearTierOrDefault(tier.level());
             String radiationTime = nuclear.radiationDurationSeconds() < 0 ? "\u0431\u0435\u0441\u043a\u043e\u043d\u0435\u0447\u043d\u043e" : nuclear.radiationDurationSeconds() + " \u0441\u0435\u043a.";
-            meta.setDisplayName("\u00a74\u042f\u0434\u0435\u0440\u043d\u0430\u044f \u0431\u043e\u043c\u0431\u0430 \u00a7c\u26a0");
-            meta.setLore(List.of("\u00a77\u041c\u043e\u0449\u043d\u043e\u0441\u0442\u044c: \u00a7f" + (int)nuclear.yieldKilotons() + " \u043a\u0438\u043b\u043e\u0442\u043e\u043d\u043d", "\u00a77\u0423\u0434\u0430\u0440\u043e\u0432 \u043f\u043e \u044f\u0434\u0440\u0443: \u00a7f" + tier.coreHits(), "\u00a77\u0420\u0430\u0434\u0438\u0443\u0441 \u0432\u0437\u0440\u044b\u0432\u0430: \u00a7f" + (int)nuclear.blastRadius(), "\u00a77\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u044f: \u00a7f" + (int)nuclear.radiationStartRadius() + "-" + (int)nuclear.radiationRadius() + "\u00a77 \u0431\u043b\u043e\u043a\u043e\u0432, \u00a7f" + radiationTime, "\u00a77\u0411\u0435\u0437 \u043f\u0440\u0438\u0442\u044f\u0433\u0438\u0432\u0430\u043d\u0438\u044f: \u0432\u0437\u0440\u044b\u0432 \u0442\u043e\u043b\u044c\u043a\u043e \u043e\u0442\u043a\u0438\u0434\u044b\u0432\u0430\u0435\u0442", "\u00a77\u041b\u043e\u043c\u0430\u0435\u0442 \u0431\u043b\u043e\u043a\u0438 \u0432\u0432\u0435\u0440\u0445 \u0438 \u0432\u043d\u0438\u0437 \u043e\u0442 \u044d\u043f\u0438\u0446\u0435\u043d\u0442\u0440\u0430", "\u00a77\u041f\u043e\u0441\u043b\u0435 \u0432\u0437\u0440\u044b\u0432\u0430 \u043e\u0441\u0442\u0430\u0432\u043b\u044f\u0435\u0442 \u043a\u0440\u0430\u0442\u0435\u0440 \u0438 \u0433\u0440\u0438\u0431", "\u00a77\u0412 \u0447\u0443\u0436\u043e\u043c \u0440\u0435\u0433\u0438\u043e\u043d\u0435 \u0441\u0442\u0430\u0432\u0438\u0442\u044c \u043d\u0435\u043b\u044c\u0437\u044f"));
-            this.applyEnchant(meta, "fire_aspect", 6, "nuclear explosive core");
+            meta.setDisplayName(profile.forbidden() ? "\u00a74\u00a7l\u0417\u0430\u043f\u0440\u0435\u0449\u0435\u043d\u043d\u044b\u0439 TNT X \u00a7c" + profile.name() : "\u00a74\u042f\u0434\u0435\u0440\u043d\u0430\u044f \u0431\u043e\u043c\u0431\u0430 \u00a7f" + this.roman(tier.level()) + " \u00a77" + profile.name());
+            ArrayList<String> lore = new ArrayList<String>();
+            lore.add("\u00a77\u0422\u0438\u043f: \u00a7f" + profile.name());
+            lore.add("\u00a77\u041c\u043e\u0449\u043d\u043e\u0441\u0442\u044c: \u00a7f" + this.formatYield(profile.yieldKilotons()));
+            lore.add("\u00a77\u0423\u0434\u0430\u0440\u043e\u0432 \u043f\u043e \u044f\u0434\u0440\u0443: \u00a7f" + tier.coreHits());
+            lore.add("\u00a77\u0420\u0430\u0434\u0438\u0443\u0441 \u0432\u0437\u0440\u044b\u0432\u0430: \u00a7f" + (int)profile.blastRadius());
+            lore.add("\u00a77\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u044f: \u00a7f" + (int)profile.radiationStartRadius() + "-" + (int)profile.radiationRadius() + "\u00a77 \u0431\u043b\u043e\u043a\u043e\u0432, \u00a7f" + radiationTime);
+            lore.add("\u00a77\u0411\u0435\u0437 \u043f\u0440\u0438\u0442\u044f\u0433\u0438\u0432\u0430\u043d\u0438\u044f: \u0432\u0437\u0440\u044b\u0432 \u0442\u043e\u043b\u044c\u043a\u043e \u043e\u0442\u043a\u0438\u0434\u044b\u0432\u0430\u0435\u0442");
+            lore.add("\u00a77\u041b\u043e\u043c\u0430\u0435\u0442 \u0431\u043b\u043e\u043a\u0438 \u0432\u0432\u0435\u0440\u0445 \u0438 \u0432\u043d\u0438\u0437 \u043e\u0442 \u044d\u043f\u0438\u0446\u0435\u043d\u0442\u0440\u0430");
+            lore.add("\u00a77\u041f\u043e\u0441\u043b\u0435 \u0432\u0437\u0440\u044b\u0432\u0430 \u043e\u0441\u0442\u0430\u0432\u043b\u044f\u0435\u0442 \u043a\u0440\u0430\u0442\u0435\u0440, \u0433\u0440\u0438\u0431 \u0438 \u0440\u0430\u0434\u0438\u0430\u0446\u0438\u044e");
+            if (profile.worldEater()) {
+                lore.add("\u00a74\u041f\u043e\u0433\u043b\u043e\u0449\u0430\u0435\u0442 \u043c\u0438\u0440 \u0432\u043e\u043a\u0440\u0443\u0433 \u044d\u043f\u0438\u0446\u0435\u043d\u0442\u0440\u0430");
+            }
+            if (profile.forbidden()) {
+                lore.add("\u00a74\u0422\u0440\u0435\u0431\u0443\u0435\u0442 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u0435: \u043f\u043e\u0441\u0442\u0430\u0432\u044c \u0434\u0432\u0430 \u0440\u0430\u0437\u0430 \u0437\u0430 15 \u0441\u0435\u043a.");
+            }
+            lore.add("\u00a77\u0412 \u0447\u0443\u0436\u043e\u043c \u0440\u0435\u0433\u0438\u043e\u043d\u0435 \u0441\u0442\u0430\u0432\u0438\u0442\u044c \u043d\u0435\u043b\u044c\u0437\u044f");
+            meta.setLore(lore);
+            this.applyEnchant(meta, "fire_aspect", tier.level(), "nuclear explosive core");
         } else {
             meta.setDisplayName("\u00a7c\u041e\u0441\u0430\u0434\u043d\u0430\u044f \u0441\u0444\u0435\u0440\u0430 \u00a7f" + this.roman(tier.level()));
             meta.setLore(List.of("\u00a77\u041c\u043e\u0449\u043d\u043e\u0441\u0442\u044c: \u00a7f" + tier.power(), "\u00a77\u0423\u0434\u0430\u0440\u043e\u0432 \u043f\u043e \u044f\u0434\u0440\u0443: \u00a7f" + tier.coreHits(), "\u00a77\u0411\u0435\u0437 \u043e\u043f\u043e\u0440\u044b \u043f\u0430\u0434\u0430\u0435\u0442 \u0432\u043d\u0438\u0437 \u043a\u0430\u043a \u0441\u043d\u0430\u0440\u044f\u0434", "\u00a77\u0412 \u042d\u043d\u0434\u0435 \u0432\u0437\u043b\u0435\u0442\u0430\u0435\u0442 \u0438 \u0431\u044c\u0451\u0442 \u0432 \u0434\u0432\u0430 \u0440\u0430\u0437\u0430 \u0441\u0438\u043b\u044c\u043d\u0435\u0435"));
@@ -178,8 +196,9 @@ public final class ItemService {
         Optional<Settings.BombTier> bombTier = this.bombTier(item);
         if (bombTier.isPresent()) {
             Settings.BombTier tier = bombTier.orElseThrow();
-            if (tier.level() == 6) {
-                return "\u042f\u0434\u0435\u0440\u043d\u0430\u044f \u0431\u043e\u043c\u0431\u0430 " + this.roman(tier.level());
+            if (tier.level() >= 6) {
+                Settings.NuclearTierSettings profile = this.plugin.getSettings().nuclearTierOrDefault(tier.level());
+                return "\u042f\u0434\u0435\u0440\u043d\u0430\u044f \u0431\u043e\u043c\u0431\u0430 " + this.roman(tier.level()) + " / " + profile.name();
             }
             return "\u041e\u0441\u0430\u0434\u043d\u0430\u044f \u0441\u0444\u0435\u0440\u0430 " + this.roman(tier.level());
         }
@@ -209,6 +228,13 @@ public final class ItemService {
     private int normalizeBookLevel(int level) {
         int highest = this.plugin.getSettings().highestProtectionLevel().orElse(1);
         return Math.max(1, Math.min(highest, level));
+    }
+
+    private String formatYield(double kilotons) {
+        if (kilotons >= 1000.0) {
+            return String.format(Locale.ROOT, "%.1f \u041c\u0442 (%s \u043a\u0442)", kilotons / 1000.0, String.format(Locale.ROOT, "%,.0f", kilotons).replace(',', ' '));
+        }
+        return String.format(Locale.ROOT, "%.0f \u043a\u0442", kilotons);
     }
 
     private String prettify(Material material) {

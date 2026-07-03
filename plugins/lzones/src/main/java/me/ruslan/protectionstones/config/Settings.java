@@ -47,6 +47,7 @@ public final class Settings {
     private final double endBombPowerMultiplier;
     private final MegaBombSettings megaBombSettings;
     private final NuclearBombSettings nuclearBombSettings;
+    private final LinkedHashMap<Integer, NuclearTierSettings> nuclearTierSettings;
     private final OutlineSettings outlineSettings;
     private final LinkedHashMap<String, ProtectionTier> protectionTiers;
     private final LinkedHashMap<Integer, BombTier> bombTiers;
@@ -54,7 +55,7 @@ public final class Settings {
     private final List<String> ironCoreRecipeShape;
     private final Map<Character, Material> ironCoreRecipeIngredients;
 
-    private Settings(int heightBelow, int heightAbove, boolean protectBlocksFromExplosions, boolean allowPvpInsideZones, int defaultMaxRegions, int vipMaxRegions, int maxMembersPerRegion, String vipPermission, int homeScanHeight, int actionBarCooldownTicks, double corePulseDamage, int bombCountdownSeconds, int bombSpherePoints, int bombWaveSteps, int endBombRiseTicks, double endBombPowerMultiplier, MegaBombSettings megaBombSettings, NuclearBombSettings nuclearBombSettings, OutlineSettings outlineSettings, LinkedHashMap<String, ProtectionTier> protectionTiers, LinkedHashMap<Integer, BombTier> bombTiers, Map<String, String> messages, List<String> ironCoreRecipeShape, Map<Character, Material> ironCoreRecipeIngredients) {
+    private Settings(int heightBelow, int heightAbove, boolean protectBlocksFromExplosions, boolean allowPvpInsideZones, int defaultMaxRegions, int vipMaxRegions, int maxMembersPerRegion, String vipPermission, int homeScanHeight, int actionBarCooldownTicks, double corePulseDamage, int bombCountdownSeconds, int bombSpherePoints, int bombWaveSteps, int endBombRiseTicks, double endBombPowerMultiplier, MegaBombSettings megaBombSettings, NuclearBombSettings nuclearBombSettings, LinkedHashMap<Integer, NuclearTierSettings> nuclearTierSettings, OutlineSettings outlineSettings, LinkedHashMap<String, ProtectionTier> protectionTiers, LinkedHashMap<Integer, BombTier> bombTiers, Map<String, String> messages, List<String> ironCoreRecipeShape, Map<Character, Material> ironCoreRecipeIngredients) {
         this.heightBelow = heightBelow;
         this.heightAbove = heightAbove;
         this.protectBlocksFromExplosions = protectBlocksFromExplosions;
@@ -73,6 +74,7 @@ public final class Settings {
         this.endBombPowerMultiplier = endBombPowerMultiplier;
         this.megaBombSettings = megaBombSettings;
         this.nuclearBombSettings = nuclearBombSettings;
+        this.nuclearTierSettings = nuclearTierSettings;
         this.outlineSettings = outlineSettings;
         this.protectionTiers = protectionTiers;
         this.bombTiers = bombTiers;
@@ -92,6 +94,7 @@ public final class Settings {
         ConfigurationSection explosiveEnd = Settings.optionalSection(explosive, "end");
         ConfigurationSection explosiveMega = Settings.optionalSection(explosive, "mega-five");
         ConfigurationSection explosiveNuclear = Settings.optionalSection(explosive, "nuclear");
+        ConfigurationSection explosiveNuclearTiers = Settings.optionalSection(explosive, "nuclear-tiers");
         ConfigurationSection explosiveLevels = Settings.section(explosive, "levels");
         ConfigurationSection messages = Settings.section((ConfigurationSection)config, "messages");
         ConfigurationSection maxRegions = Settings.section(general, "max-regions");
@@ -101,6 +104,14 @@ public final class Settings {
         double radiationMaxRadius = Math.max(radiationStartRadius, explosiveNuclear.getDouble("radiation-radius", 200.0));
         int radiationDurationSeconds = explosiveNuclear.getInt("radiation-duration-seconds", 360);
         NuclearBombSettings nuclearBombSettings = new NuclearBombSettings(Math.max(20, explosiveNuclear.getInt("charge-ticks", 140)), Math.max(8.0, explosiveNuclear.getDouble("blast-radius", 180.0)), Math.max(4.0f, (float)explosiveNuclear.getDouble("explosion-power", 52.0)), Math.max(4, explosiveNuclear.getInt("crater-radius", 38)), Math.max(2, explosiveNuclear.getInt("crater-depth", 18)), Math.max(0, explosiveNuclear.getInt("crater-height", 24)), Math.max(8.0, explosiveNuclear.getDouble("mushroom-height", 170.0)), Math.max(4.0, explosiveNuclear.getDouble("mushroom-radius", 72.0)), radiationStartRadius, radiationMaxRadius, radiationDurationSeconds < 0 ? -1 : Math.max(60, radiationDurationSeconds), Math.max(1, explosiveNuclear.getInt("radiation-expansion-seconds", 2400)), Math.max(0.1, explosiveNuclear.getDouble("exposure-per-second", 1.0)), Math.max(0.0, explosiveNuclear.getDouble("safe-decay-per-second", 0.35)), Math.max(1.0, explosiveNuclear.getDouble("damage-threshold", 12.0)), Math.max(0.1, explosiveNuclear.getDouble("damage-per-second", 1.5)), Math.max(8.0, explosiveNuclear.getDouble("core-shockwave-radius", 180.0)), Math.max(0.1, explosiveNuclear.getDouble("yield-kilotons", 24.0)));
+        LinkedHashMap<Integer, NuclearTierSettings> nuclearTiers = new LinkedHashMap<Integer, NuclearTierSettings>();
+        for (String key : explosiveNuclearTiers.getKeys(false)) {
+            int level = Settings.integer(key, 0);
+            if (level < 6) {
+                continue;
+            }
+            nuclearTiers.put(level, Settings.nuclearTierSettings(level, Settings.section(explosiveNuclearTiers, key), nuclearBombSettings));
+        }
         OutlineSettings outlineSettings = new OutlineSettings(OutlineMode.fromString(outline.getString("mode", "LINES")), Math.max(20, outline.getInt("duration-ticks", 80)), Math.max(2, outline.getInt("preview-interval-ticks", 6)), Math.max(3, outline.getInt("preview-distance", 6)), Math.max(1, outline.getInt("step", 4)), Math.max(0.4, outline.getDouble("spacing", 0.85)), (float)Math.max(0.5, outline.getDouble("particle-size", 1.1)), Settings.material(outline.getString("fake-block"), Material.LIGHT_BLUE_STAINED_GLASS), Settings.particle(outline.getString("particle"), Particle.END_ROD), Color.fromRGB((int)Settings.clamp(outline.getInt("particle-red", 90)), (int)Settings.clamp(outline.getInt("particle-green", 220)), (int)Settings.clamp(outline.getInt("particle-blue", 255))));
         LinkedHashMap<String, ProtectionTier> tiers = new LinkedHashMap<String, ProtectionTier>();
         ArrayList<ProtectionTier> rawTiers = new ArrayList<ProtectionTier>();
@@ -130,7 +141,13 @@ public final class Settings {
             if (key.length() != 1) continue;
             recipeIngredients.put(Character.valueOf(key.charAt(0)), Settings.material(ingredientSection.getString(key), Material.AIR));
         }
-        return new Settings(Math.max(1, general.getInt("height-below", 16)), Math.max(1, general.getInt("height-above", 24)), general.getBoolean("protect-blocks-from-explosions", true), general.getBoolean("allow-pvp-inside-zones", false), Math.max(1, maxRegions.getInt("default", 3)), Math.max(1, maxRegions.getInt("vip", 6)), Math.max(1, general.getInt("max-members-per-region", 20)), Objects.requireNonNullElse(maxRegions.getString("vip-permission"), "protectionstones.vip"), Math.max(8, home.getInt("scan-up", 32)), Math.max(1, actionBar.getInt("cooldown-ticks", 25)), Math.max(0.0, general.getDouble("core-pulse-damage", 2.0)), Math.max(1, explosive.getInt("countdown-seconds", 5)), Math.max(8, explosive.getInt("sphere-points", 48)), Math.max(1, explosive.getInt("wave-steps", 6)), Math.max(10, explosiveEnd.getInt("rise-ticks", 40)), Math.max(1.0, explosiveEnd.getDouble("power-multiplier", 2.0)), megaBombSettings, nuclearBombSettings, outlineSettings, tiers, bombs, Collections.unmodifiableMap(messageMap), List.copyOf(recipeShape), Map.copyOf(recipeIngredients));
+        return new Settings(Math.max(1, general.getInt("height-below", 16)), Math.max(1, general.getInt("height-above", 24)), general.getBoolean("protect-blocks-from-explosions", true), general.getBoolean("allow-pvp-inside-zones", false), Math.max(1, maxRegions.getInt("default", 3)), Math.max(1, maxRegions.getInt("vip", 6)), Math.max(1, general.getInt("max-members-per-region", 20)), Objects.requireNonNullElse(maxRegions.getString("vip-permission"), "protectionstones.vip"), Math.max(8, home.getInt("scan-up", 32)), Math.max(1, actionBar.getInt("cooldown-ticks", 25)), Math.max(0.0, general.getDouble("core-pulse-damage", 2.0)), Math.max(1, explosive.getInt("countdown-seconds", 5)), Math.max(8, explosive.getInt("sphere-points", 48)), Math.max(1, explosive.getInt("wave-steps", 6)), Math.max(10, explosiveEnd.getInt("rise-ticks", 40)), Math.max(1.0, explosiveEnd.getDouble("power-multiplier", 2.0)), megaBombSettings, nuclearBombSettings, nuclearTiers, outlineSettings, tiers, bombs, Collections.unmodifiableMap(messageMap), List.copyOf(recipeShape), Map.copyOf(recipeIngredients));
+    }
+
+    private static NuclearTierSettings nuclearTierSettings(int level, ConfigurationSection section, NuclearBombSettings fallback) {
+        double radiationStartRadius = Math.max(1.0, section.getDouble("radiation-start-radius", fallback.radiationStartRadius()));
+        double radiationRadius = Math.max(radiationStartRadius, section.getDouble("radiation-radius", fallback.radiationRadius()));
+        return new NuclearTierSettings(level, Objects.requireNonNullElse(section.getString("name"), "Nuclear " + level), Math.max(0.1, section.getDouble("yield-kilotons", fallback.yieldKilotons())), Math.max(8.0, section.getDouble("blast-radius", fallback.blastRadius())), Math.max(4.0f, (float)section.getDouble("explosion-power", fallback.explosionPower())), Math.max(4, section.getInt("crater-radius", fallback.craterRadius())), Math.max(2, section.getInt("crater-depth", fallback.craterDepth())), Math.max(0, section.getInt("crater-height", fallback.craterHeight())), Math.max(8.0, section.getDouble("mushroom-height", fallback.mushroomHeight())), Math.max(4.0, section.getDouble("mushroom-radius", fallback.mushroomRadius())), radiationStartRadius, radiationRadius, Math.max(1, section.getInt("radiation-expansion-seconds", fallback.radiationExpansionSeconds())), Math.max(8.0, section.getDouble("core-shockwave-radius", fallback.coreShockwaveRadius())), section.getBoolean("forbidden", level >= 10), section.getBoolean("world-eater", false), Math.max(0, section.getInt("world-eater-radius", 0)), Math.max(1, section.getInt("world-eater-blocks-per-tick", 650)), Math.max(0, section.getInt("world-eater-max-blocks", 0)));
     }
 
     private static ConfigurationSection section(ConfigurationSection root, String path) {
@@ -250,6 +267,18 @@ public final class Settings {
         return this.nuclearBombSettings;
     }
 
+    public Optional<NuclearTierSettings> nuclearTier(int level) {
+        return Optional.ofNullable(this.nuclearTierSettings.get(level));
+    }
+
+    public NuclearTierSettings nuclearTierOrDefault(int level) {
+        NuclearTierSettings configured = this.nuclearTierSettings.get(level);
+        if (configured != null) {
+            return configured;
+        }
+        return new NuclearTierSettings(level, level >= 10 ? "World Eater" : "Nuclear " + level, this.nuclearBombSettings.yieldKilotons(), this.nuclearBombSettings.blastRadius(), this.nuclearBombSettings.explosionPower(), this.nuclearBombSettings.craterRadius(), this.nuclearBombSettings.craterDepth(), this.nuclearBombSettings.craterHeight(), this.nuclearBombSettings.mushroomHeight(), this.nuclearBombSettings.mushroomRadius(), this.nuclearBombSettings.radiationStartRadius(), this.nuclearBombSettings.radiationRadius(), this.nuclearBombSettings.radiationExpansionSeconds(), this.nuclearBombSettings.coreShockwaveRadius(), level >= 10, false, 0, 650, 0);
+    }
+
     public OutlineSettings outlineSettings() {
         return this.outlineSettings;
     }
@@ -323,6 +352,9 @@ public final class Settings {
     }
 
     public record NuclearBombSettings(int chargeTicks, double blastRadius, float explosionPower, int craterRadius, int craterDepth, int craterHeight, double mushroomHeight, double mushroomRadius, double radiationStartRadius, double radiationRadius, int radiationDurationSeconds, int radiationExpansionSeconds, double exposurePerSecond, double safeDecayPerSecond, double damageThreshold, double damagePerSecond, double coreShockwaveRadius, double yieldKilotons) {
+    }
+
+    public record NuclearTierSettings(int level, String name, double yieldKilotons, double blastRadius, float explosionPower, int craterRadius, int craterDepth, int craterHeight, double mushroomHeight, double mushroomRadius, double radiationStartRadius, double radiationRadius, int radiationExpansionSeconds, double coreShockwaveRadius, boolean forbidden, boolean worldEater, int worldEaterRadius, int worldEaterBlocksPerTick, int worldEaterMaxBlocks) {
     }
 
     public record OutlineSettings(OutlineMode mode, int durationTicks, int previewIntervalTicks, int previewDistance, int step, double spacing, float particleSize, Material fakeBlock, Particle particle, Color particleColor) {

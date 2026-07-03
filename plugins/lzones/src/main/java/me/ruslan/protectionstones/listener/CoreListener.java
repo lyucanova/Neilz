@@ -83,7 +83,12 @@ implements Listener {
                 this.plugin.getMessageService().actionBar(player, "place-denied", "cannot-place", Map.of());
                 return;
             }
-            this.plugin.getBombService().arm(player, block.getLocation(), bombTier.orElseThrow());
+            Settings.BombTier tier = bombTier.orElseThrow();
+            if (!this.plugin.getBombService().confirmForbiddenBomb(player, tier)) {
+                event.setCancelled(true);
+                return;
+            }
+            this.plugin.getBombService().arm(player, block.getLocation(), tier);
             return;
         }
         if (this.plugin.getItemService().looksLikeCoreMaterial(item)) {

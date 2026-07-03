@@ -180,6 +180,90 @@ explosive:
     damage-threshold: 12.0
     damage-per-second: 1.5
     core-shockwave-radius: 180.0
+  nuclear-tiers:
+    6:
+      name: "Fat Man+"
+      yield-kilotons: 24.0
+      blast-radius: 180.0
+      explosion-power: 52.0
+      crater-radius: 38
+      crater-depth: 18
+      crater-height: 24
+      mushroom-height: 170.0
+      mushroom-radius: 72.0
+      radiation-start-radius: 100.0
+      radiation-radius: 200.0
+      radiation-expansion-seconds: 2400
+      core-shockwave-radius: 180.0
+      forbidden: false
+      world-eater: false
+    7:
+      name: "Castle Bravo"
+      yield-kilotons: 15000.0
+      blast-radius: 240.0
+      explosion-power: 68.0
+      crater-radius: 48
+      crater-depth: 24
+      crater-height: 30
+      mushroom-height: 220.0
+      mushroom-radius: 95.0
+      radiation-start-radius: 120.0
+      radiation-radius: 240.0
+      radiation-expansion-seconds: 2400
+      core-shockwave-radius: 240.0
+      forbidden: false
+      world-eater: false
+    8:
+      name: "Tsar Bomba"
+      yield-kilotons: 50000.0
+      blast-radius: 320.0
+      explosion-power: 86.0
+      crater-radius: 58
+      crater-depth: 30
+      crater-height: 38
+      mushroom-height: 280.0
+      mushroom-radius: 125.0
+      radiation-start-radius: 150.0
+      radiation-radius: 300.0
+      radiation-expansion-seconds: 3000
+      core-shockwave-radius: 320.0
+      forbidden: false
+      world-eater: false
+    9:
+      name: "Tsar Bomba MAX"
+      yield-kilotons: 100000.0
+      blast-radius: 410.0
+      explosion-power: 104.0
+      crater-radius: 68
+      crater-depth: 36
+      crater-height: 46
+      mushroom-height: 340.0
+      mushroom-radius: 155.0
+      radiation-start-radius: 180.0
+      radiation-radius: 360.0
+      radiation-expansion-seconds: 3200
+      core-shockwave-radius: 410.0
+      forbidden: false
+      world-eater: false
+    10:
+      name: "World Eater"
+      yield-kilotons: 1000000.0
+      blast-radius: 520.0
+      explosion-power: 128.0
+      crater-radius: 86
+      crater-depth: 44
+      crater-height: 58
+      mushroom-height: 430.0
+      mushroom-radius: 210.0
+      radiation-start-radius: 220.0
+      radiation-radius: 520.0
+      radiation-expansion-seconds: 3600
+      core-shockwave-radius: 700.0
+      forbidden: true
+      world-eater: true
+      world-eater-radius: 1000
+      world-eater-blocks-per-tick: 1200
+      world-eater-max-blocks: 600000
   levels:
     1:
       item: "REDSTONE_BLOCK"
@@ -205,6 +289,22 @@ explosive:
       item: "TNT"
       power: 24.0
       core-hits: 20
+    7:
+      item: "TNT"
+      power: 15000.0
+      core-hits: 40
+    8:
+      item: "TNT"
+      power: 50000.0
+      core-hits: 80
+    9:
+      item: "TNT"
+      power: 100000.0
+      core-hits: 160
+    10:
+      item: "TNT"
+      power: 1000000.0
+      core-hits: 999
 
 recipes:
   iron-core:

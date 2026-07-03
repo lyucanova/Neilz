@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import me.ruslan.protectionstones.ProtectionStonesPlugin;
@@ -66,6 +67,7 @@ public final class BombService {
     private final File radiationStorageFile;
     private final Map<String, PendingBomb> pendingBombs = new HashMap<String, PendingBomb>();
     private final Map<UUID, FallingBomb> fallingBombs = new HashMap<UUID, FallingBomb>();
+    private final Map<UUID, Long> forbiddenBombConfirmations = new HashMap<UUID, Long>();
     private final List<RadiationZone> radiationZones = new ArrayList<RadiationZone>();
     private final Map<UUID, Double> radiationExposure = new HashMap<UUID, Double>();
 
@@ -129,11 +131,32 @@ public final class BombService {
         return this.pendingBombs.containsKey(this.key(location));
     }
 
+    public boolean confirmForbiddenBomb(Player player, Settings.BombTier tier) {
+        Settings.NuclearTierSettings profile = this.plugin.getSettings().nuclearTierOrDefault(tier.level());
+        if (player == null || !profile.forbidden()) {
+            return true;
+        }
+        long now = System.currentTimeMillis();
+        UUID uuid = player.getUniqueId();
+        Long expiresAt = this.forbiddenBombConfirmations.get(uuid);
+        if (expiresAt != null && expiresAt >= now) {
+            this.forbiddenBombConfirmations.remove(uuid);
+            player.sendMessage(this.plugin.getMessageService().component("&4&lПодтверждено. &c" + profile.name() + " X активирован."));
+            player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.9f, 0.45f);
+            return true;
+        }
+        this.forbiddenBombConfirmations.put(uuid, now + 15000L);
+        player.sendMessage(this.plugin.getMessageService().component("&4&lЗапрещенный TNT X. &cВы реально хотите поставить " + profile.name() + "? Поставь его еще раз за 15 секунд."));
+        player.sendActionBar(this.plugin.getMessageService().component("&4Поставь TNT X еще раз за 15 секунд для подтверждения"));
+        player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.9f, 0.55f);
+        return false;
+    }
+
     public void arm(Player owner, Location location, Settings.BombTier tier) {
         if (location.getWorld() == null) {
             return;
         }
-        if (location.getWorld().getEnvironment() == World.Environment.THE_END && tier.level() != 6) {
+        if (location.getWorld().getEnvironment() == World.Environment.THE_END && tier.level() < 6) {
             location.getBlock().setType(Material.AIR, false);
             this.launchEndBomb(owner.getUniqueId(), location.clone().add(0.5, 0.5, 0.5), tier);
             return;
@@ -181,7 +204,7 @@ public final class BombService {
             world.playSound(location, Sound.ENTITY_TNT_PRIMED, 1.0f, 1.0f);
             if (tier != null && tier.level() == 5) {
                 world.playSound(location, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.9f, 0.7f);
-            } else if (tier != null && tier.level() == 6) {
+            } else if (tier != null && tier.level() >= 6) {
                 world.playSound(location, Sound.ENTITY_WITHER_SPAWN, 0.55f, 0.55f);
             }
         }
@@ -219,7 +242,7 @@ public final class BombService {
         if (location.getBlock().getType() != Material.AIR) {
             location.getBlock().setType(Material.AIR, false);
         }
-        if ((tier = (Settings.BombTier)this.plugin.getSettings().bombTier(bomb.level()).orElse(null)) != null && tier.level() == 6) {
+        if ((tier = (Settings.BombTier)this.plugin.getSettings().bombTier(bomb.level()).orElse(null)) != null && tier.level() >= 6) {
             this.runNuclearSequence(location.clone().add(0.5, 0.5, 0.5), tier, bomb.ownerUuid());
             return;
         }
@@ -359,6 +382,7 @@ public final class BombService {
             return;
         }
         final Settings.NuclearBombSettings nuclear = this.plugin.getSettings().nuclearBombSettings();
+        final Settings.NuclearTierSettings profile = this.plugin.getSettings().nuclearTierOrDefault(tier.level());
         world.playSound(origin, Sound.ENTITY_WITHER_SPAWN, 1.25f, 0.45f);
         world.playSound(origin, Sound.BLOCK_BEACON_DEACTIVATE, 1.1f, 0.55f);
         new BukkitRunnable(){
@@ -366,12 +390,12 @@ public final class BombService {
 
             public void run() {
                 if (this.tick >= nuclear.chargeTicks()) {
-                    BombService.this.detonateNuclear(origin, tier, ownerUuid, nuclear);
+                    BombService.this.detonateNuclear(origin, tier, ownerUuid, nuclear, profile);
                     this.cancel();
                     return;
                 }
                 double progress = (double)this.tick / (double)nuclear.chargeTicks();
-                BombService.this.renderNuclearCharge(origin, this.tick, progress, nuclear);
+                BombService.this.renderNuclearCharge(origin, this.tick, progress, profile);
                 if (this.tick % 10 == 0) {
                     world.playSound(origin, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 0.45f + (float)progress * 0.8f);
                     world.playSound(origin, Sound.BLOCK_BEACON_AMBIENT, 0.75f, 0.45f + (float)progress * 0.5f);
@@ -381,13 +405,13 @@ public final class BombService {
         }.runTaskTimer((Plugin)this.plugin, 0L, 2L);
     }
 
-    private void renderNuclearCharge(Location center, int tick, double progress, Settings.NuclearBombSettings nuclear) {
+    private void renderNuclearCharge(Location center, int tick, double progress, Settings.NuclearTierSettings profile) {
         World world = center.getWorld();
         if (world == null) {
             return;
         }
-        double radius = 5.0 + progress * Math.min(42.0, nuclear.blastRadius() * 0.3);
-        double columnHeight = 10.0 + progress * Math.min(60.0, nuclear.mushroomHeight() * 0.42);
+        double radius = 5.0 + progress * Math.min(64.0, profile.blastRadius() * 0.28);
+        double columnHeight = 10.0 + progress * Math.min(96.0, profile.mushroomHeight() * 0.42);
         double rotation = (double)tick * 0.22;
         Particle.DustOptions red = new Particle.DustOptions(Color.fromRGB((int)255, (int)35, (int)25), 1.8f);
         Particle.DustOptions yellow = new Particle.DustOptions(Color.fromRGB((int)255, (int)210, (int)70), 1.35f);
@@ -410,29 +434,32 @@ public final class BombService {
         world.spawnParticle(Particle.SMOKE_LARGE, center, 28, radius * 0.58, 1.6, radius * 0.58, 0.022);
     }
 
-    private void detonateNuclear(Location center, Settings.BombTier tier, UUID ownerUuid, Settings.NuclearBombSettings nuclear) {
+    private void detonateNuclear(Location center, Settings.BombTier tier, UUID ownerUuid, Settings.NuclearBombSettings nuclear, Settings.NuclearTierSettings profile) {
         World world = center.getWorld();
         if (world == null) {
             return;
         }
         Player owner = Bukkit.getPlayer((UUID)ownerUuid);
-        this.animateFinalWave(center, Math.min(40.0, nuclear.blastRadius()));
-        this.animateNuclearShockwave(center, nuclear.blastRadius(), nuclear.radiationRadius());
+        this.animateFinalWave(center, Math.min(80.0, profile.blastRadius()));
+        this.animateNuclearShockwave(center, profile.blastRadius(), profile.radiationRadius());
         world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.35f);
         world.playSound(center, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 2.0f, 0.35f);
         world.playSound(center, Sound.ENTITY_WITHER_DEATH, 1.7f, 0.45f);
         world.playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.8f, 0.55f);
-        world.createExplosion(center, nuclear.explosionPower(), false, true, (Entity)owner);
-        this.createNuclearCrater(center, nuclear.craterRadius(), nuclear.craterDepth(), nuclear.craterHeight());
-        this.applyCoreShockwave(center, nuclear.coreShockwaveRadius(), tier.coreHits());
-        this.renderNuclearMushroom(center, nuclear);
-        this.createRadiationZone(center, nuclear);
-        for (Entity entity : world.getNearbyEntities(center, nuclear.blastRadius(), nuclear.blastRadius(), nuclear.blastRadius())) {
+        world.createExplosion(center, profile.explosionPower(), false, true, (Entity)owner);
+        this.createNuclearCrater(center, profile.craterRadius(), profile.craterDepth(), profile.craterHeight());
+        this.applyCoreShockwave(center, profile.coreShockwaveRadius(), tier.coreHits());
+        this.renderNuclearMushroom(center, profile);
+        this.createRadiationZone(center, nuclear, profile);
+        if (profile.worldEater()) {
+            this.runWorldEater(center, profile);
+        }
+        for (Entity entity : world.getNearbyEntities(center, profile.blastRadius(), profile.blastRadius(), profile.blastRadius())) {
             LivingEntity living;
             if (!(entity instanceof LivingEntity) || (living = (LivingEntity)entity).isDead()) continue;
             double distance = Math.max(1.0, entity.getLocation().distance(center));
-            double falloff = Math.max(0.0, 1.0 - distance / nuclear.blastRadius());
-            double damage = Math.max(10.0, nuclear.blastRadius() * 1.65 * falloff);
+            double falloff = Math.max(0.0, 1.0 - distance / profile.blastRadius());
+            double damage = Math.max(10.0, profile.blastRadius() * 1.65 * falloff);
             Vector push = entity.getLocation().toVector().subtract(center.toVector());
             if (push.lengthSquared() > 0.0) {
                 push.normalize().multiply(2.2 * falloff + 0.35).setY(0.85 + falloff * 1.5);
@@ -445,7 +472,7 @@ public final class BombService {
             living.damage(damage);
         }
         for (Player nearby : world.getPlayers()) {
-            if (!(nearby.getLocation().distanceSquared(center) <= nuclear.radiationRadius() * nuclear.radiationRadius() * 4.0)) continue;
+            if (!(nearby.getLocation().distanceSquared(center) <= profile.radiationRadius() * profile.radiationRadius() * 4.0)) continue;
             this.plugin.getMessageService().actionBar(nearby, "nuclear-detonated-" + this.key(center), "nuclear-detonated", Map.of());
         }
     }
@@ -566,7 +593,7 @@ public final class BombService {
         return this.canAbsorb(material);
     }
 
-    private void renderNuclearMushroom(final Location center, final Settings.NuclearBombSettings nuclear) {
+    private void renderNuclearMushroom(final Location center, final Settings.NuclearTierSettings profile) {
         final World world = center.getWorld();
         if (world == null) {
             return;
@@ -580,8 +607,8 @@ public final class BombService {
                     return;
                 }
                 double progress = Math.min(1.0, (double)this.tick / 150.0);
-                double stemHeight = nuclear.mushroomHeight() * Math.min(1.0, progress * 1.2);
-                double capRadius = nuclear.mushroomRadius() * Math.min(1.0, progress * 1.35);
+                double stemHeight = profile.mushroomHeight() * Math.min(1.0, progress * 1.2);
+                double capRadius = profile.mushroomRadius() * Math.min(1.0, progress * 1.35);
                 Particle.DustOptions hot = new Particle.DustOptions(Color.fromRGB((int)255, (int)150, (int)45), 1.5f);
                 Particle.DustOptions dark = new Particle.DustOptions(Color.fromRGB((int)95, (int)80, (int)60), 1.8f);
                 for (double y = 0.0; y <= stemHeight; y += 3.4) {
@@ -615,12 +642,78 @@ public final class BombService {
         }.runTaskTimer((Plugin)this.plugin, 0L, 2L);
     }
 
-    private void createRadiationZone(Location center, Settings.NuclearBombSettings nuclear) {
+    private void createRadiationZone(Location center, Settings.NuclearBombSettings nuclear, Settings.NuclearTierSettings profile) {
         long now = System.currentTimeMillis();
         long expiresAt = nuclear.radiationDurationSeconds() < 0 ? -1L : now + (long)nuclear.radiationDurationSeconds() * 1000L;
-        long expansionMillis = Math.max(1000L, (long)nuclear.radiationExpansionSeconds() * 1000L);
-        this.radiationZones.add(new RadiationZone(center.getWorld().getName(), center.getX(), center.getY(), center.getZ(), nuclear.radiationStartRadius(), nuclear.radiationRadius(), now, expansionMillis, expiresAt));
-        this.renderRadiationRing(center, nuclear.radiationStartRadius(), nuclear.radiationRadius());
+        long expansionMillis = Math.max(1000L, (long)profile.radiationExpansionSeconds() * 1000L);
+        this.radiationZones.add(new RadiationZone(center.getWorld().getName(), center.getX(), center.getY(), center.getZ(), profile.radiationStartRadius(), profile.radiationRadius(), now, expansionMillis, expiresAt));
+        this.renderRadiationRing(center, profile.radiationStartRadius(), profile.radiationRadius());
+    }
+
+    private void runWorldEater(final Location center, final Settings.NuclearTierSettings profile) {
+        final World world = center.getWorld();
+        if (world == null) {
+            return;
+        }
+        final int radius = Math.max((int)Math.ceil(profile.blastRadius()), profile.worldEaterRadius() > 0 ? profile.worldEaterRadius() : 0);
+        final int verticalRadius = Math.max(32, Math.min(radius, 128));
+        final int blocksPerTick = Math.max(1, profile.worldEaterBlocksPerTick());
+        final int maxBlocks = profile.worldEaterMaxBlocks() > 0 ? profile.worldEaterMaxBlocks() : Math.max(60000, radius * radius);
+        final Random random = new Random((long)center.getBlockX() * 341873128712L ^ (long)center.getBlockZ() * 132897987541L ^ (long)center.getBlockY());
+        world.playSound(center, Sound.BLOCK_END_PORTAL_SPAWN, 2.0f, 0.35f);
+        new BukkitRunnable(){
+            int tick;
+            int removedBlocks;
+            double currentRadius = Math.min(16.0, radius);
+
+            public void run() {
+                if (this.removedBlocks >= maxBlocks || this.tick > 1200) {
+                    world.playSound(center, Sound.ENTITY_WITHER_DEATH, 1.8f, 0.35f);
+                    world.spawnParticle(Particle.SMOKE_LARGE, center.clone().add(0.0, 3.0, 0.0), 280, Math.min(160.0, radius * 0.3), 5.0, Math.min(160.0, radius * 0.3), 0.04);
+                    this.cancel();
+                    return;
+                }
+                this.currentRadius = Math.min((double)radius, this.currentRadius + Math.max(2.0, (double)radius / 140.0));
+                int changed = 0;
+                int attempts = 0;
+                int maxAttempts = blocksPerTick * 12;
+                while (changed < blocksPerTick && attempts < maxAttempts && this.removedBlocks < maxBlocks) {
+                    ++attempts;
+                    double angle = random.nextDouble() * Math.PI * 2.0;
+                    double distance = this.currentRadius * Math.sqrt(random.nextDouble());
+                    int offsetX = (int)Math.round(Math.cos(angle) * distance);
+                    int offsetZ = (int)Math.round(Math.sin(angle) * distance);
+                    double yLimit = Math.max(8.0, (double)verticalRadius * (1.0 - Math.min(1.0, distance / Math.max(1.0, this.currentRadius)) * 0.42));
+                    int yRange = Math.max(1, (int)Math.ceil(yLimit));
+                    int offsetY = random.nextInt(yRange * 2 + 1) - yRange;
+                    int blockY = center.getBlockY() + offsetY;
+                    if (blockY < world.getMinHeight() || blockY >= world.getMaxHeight()) {
+                        continue;
+                    }
+                    Block block = world.getBlockAt(center.getBlockX() + offsetX, blockY, center.getBlockZ() + offsetZ);
+                    if (!BombService.this.canCrater(block) || BombService.this.plugin.getRegionService().regionAt(block.getLocation()).isPresent()) {
+                        continue;
+                    }
+                    Location blockCenter = block.getLocation().add(0.5, 0.5, 0.5);
+                    block.setType(Material.AIR, false);
+                    if (changed % 12 == 0) {
+                        world.spawnParticle(Particle.PORTAL, blockCenter, 14, 0.25, 0.25, 0.25, 0.18);
+                        world.spawnParticle(Particle.SMOKE_LARGE, blockCenter, 6, 0.18, 0.18, 0.18, 0.02);
+                    }
+                    ++changed;
+                    ++this.removedBlocks;
+                }
+                if (this.tick % 5 == 0) {
+                    BombService.this.renderFlatRing(center.clone().add(0.0, 0.45, 0.0), this.currentRadius, 256, new Particle.DustOptions(Color.fromRGB((int)110, (int)0, (int)0), 2.0f));
+                    world.spawnParticle(Particle.PORTAL, center.clone().add(0.0, 2.0, 0.0), 95, Math.min(180.0, this.currentRadius * 0.42), 2.2, Math.min(180.0, this.currentRadius * 0.42), 0.18);
+                }
+                if (this.tick % 20 == 0) {
+                    world.playSound(center, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.1f, 0.35f);
+                    world.playSound(center, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.0f, 0.4f);
+                }
+                ++this.tick;
+            }
+        }.runTaskTimer((Plugin)this.plugin, 1L, 1L);
     }
 
     private void renderRadiationRing(Location center, double startRadius, double maxRadius) {
@@ -955,12 +1048,12 @@ public final class BombService {
         }
         for (Player nearby : world.getPlayers()) {
             if (!(nearby.getLocation().distanceSquared(location) <= 400.0)) continue;
-            String messageKey = level == 6 ? "nuclear-arming" : "bomb-arming";
+            String messageKey = level >= 6 ? "nuclear-arming" : "bomb-arming";
             this.plugin.getMessageService().actionBar(nearby, "bomb-" + this.key(location) + "-" + secondsLeft, messageKey, Map.of("level", this.plugin.getItemService().roman(level), "seconds", Integer.toString(secondsLeft)));
         }
         world.playSound(location, Sound.BLOCK_NOTE_BLOCK_HAT, 0.7f, 0.8f + (float)secondsLeft * 0.05f);
         world.spawnParticle(Particle.REDSTONE, location.clone().add(0.5, 0.9, 0.5), this.plugin.getSettings().bombSpherePoints(), 0.9, 0.9, 0.9, 0.01, (Object)new Particle.DustOptions(Color.RED, 1.5f));
-        if (level == 6) {
+        if (level >= 6) {
             world.spawnParticle(Particle.REDSTONE, location.clone().add(0.5, 1.3, 0.5), this.plugin.getSettings().bombSpherePoints() / 2, 1.2, 1.1, 1.2, 0.0, (Object)new Particle.DustOptions(Color.fromRGB((int)120, (int)255, (int)70), 1.25f));
             world.spawnParticle(Particle.SMOKE_LARGE, location.clone().add(0.5, 0.8, 0.5), 10, 0.65, 0.45, 0.65, 0.02);
         }
