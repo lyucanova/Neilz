@@ -1,5 +1,5 @@
 name: LZones
-version: "2.3.1-custom"
+version: "2.3.2-custom"
 main: me.ruslan.protectionstones.ProtectionStonesPlugin
 api-version: "1.20"
 authors: [Ruslan, OpenAI]

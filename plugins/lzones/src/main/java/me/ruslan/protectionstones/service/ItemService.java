@@ -97,7 +97,7 @@ public final class ItemService {
         LeatherArmorMeta meta = (LeatherArmorMeta)item.getItemMeta();
         meta.setColor(Color.fromRGB((int)110, (int)190, (int)65));
         meta.setDisplayName(name);
-        meta.setLore(List.of("\u00a77\u041a\u043e\u043c\u043f\u043b\u0435\u043a\u0442 \u043e\u0442 \u0440\u0430\u0434\u0438\u0430\u0446\u0438\u0438 LZones", "\u00a77\u041d\u0435 \u0443\u0431\u0438\u0440\u0430\u0435\u0442 \u0438\u0437\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u043d\u043e\u0441\u0442\u044c\u044e", "\u00a77\u041f\u043e\u043b\u043d\u044b\u0439 \u0441\u0435\u0442: \u00a7f" + (int)Math.round(this.plugin.getSettings().radiationSuitExposureMultiplier() * 100.0) + "% \u00a77\u0441\u043a\u043e\u0440\u043e\u0441\u0442\u0438 \u043e\u0431\u043b\u0443\u0447\u0435\u043d\u0438\u044f"));
+        meta.setLore(List.of("\u00a77\u041a\u043e\u043c\u043f\u043b\u0435\u043a\u0442 \u043e\u0442 \u0440\u0430\u0434\u0438\u0430\u0446\u0438\u0438 LZones", "\u00a77\u041d\u0435 \u0443\u0431\u0438\u0440\u0430\u0435\u0442 \u0438\u0437\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u043d\u043e\u0441\u0442\u044c\u044e", "\u00a77\u041f\u043e\u043b\u043d\u044b\u0439 \u0441\u0435\u0442: \u00a7f" + this.formatDose(this.plugin.getSettings().radiationSuitExposurePerTenSeconds()) + " \u00a77\u043e\u0431\u043b\u0443\u0447\u0435\u043d\u0438\u044f \u0437\u0430 10 \u0441\u0435\u043a."));
         this.applyEnchant(meta, "protection", 4, "radiation suit");
         meta.addItemFlags(new ItemFlag[]{ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_DYE});
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
@@ -284,6 +284,10 @@ public final class ItemService {
             return String.format(Locale.ROOT, "%.1f \u041c\u0442 (%s \u043a\u0442)", kilotons / 1000.0, String.format(Locale.ROOT, "%,.0f", kilotons).replace(',', ' '));
         }
         return String.format(Locale.ROOT, "%.0f \u043a\u0442", kilotons);
+    }
+
+    private String formatDose(double value) {
+        return String.format(Locale.ROOT, "%.1f", value);
     }
 
     private String prettify(Material material) {

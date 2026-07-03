@@ -49,6 +49,7 @@ public final class Settings {
     private final NuclearBombSettings nuclearBombSettings;
     private final LinkedHashMap<Integer, NuclearTierSettings> nuclearTierSettings;
     private final double radiationSuitExposureMultiplier;
+    private final double radiationSuitExposurePerTenSeconds;
     private final OutlineSettings outlineSettings;
     private final LinkedHashMap<String, ProtectionTier> protectionTiers;
     private final LinkedHashMap<Integer, BombTier> bombTiers;
@@ -56,7 +57,7 @@ public final class Settings {
     private final List<String> ironCoreRecipeShape;
     private final Map<Character, Material> ironCoreRecipeIngredients;
 
-    private Settings(int heightBelow, int heightAbove, boolean protectBlocksFromExplosions, boolean allowPvpInsideZones, int defaultMaxRegions, int vipMaxRegions, int maxMembersPerRegion, String vipPermission, int homeScanHeight, int actionBarCooldownTicks, double corePulseDamage, int bombCountdownSeconds, int bombSpherePoints, int bombWaveSteps, int endBombRiseTicks, double endBombPowerMultiplier, MegaBombSettings megaBombSettings, NuclearBombSettings nuclearBombSettings, LinkedHashMap<Integer, NuclearTierSettings> nuclearTierSettings, double radiationSuitExposureMultiplier, OutlineSettings outlineSettings, LinkedHashMap<String, ProtectionTier> protectionTiers, LinkedHashMap<Integer, BombTier> bombTiers, Map<String, String> messages, List<String> ironCoreRecipeShape, Map<Character, Material> ironCoreRecipeIngredients) {
+    private Settings(int heightBelow, int heightAbove, boolean protectBlocksFromExplosions, boolean allowPvpInsideZones, int defaultMaxRegions, int vipMaxRegions, int maxMembersPerRegion, String vipPermission, int homeScanHeight, int actionBarCooldownTicks, double corePulseDamage, int bombCountdownSeconds, int bombSpherePoints, int bombWaveSteps, int endBombRiseTicks, double endBombPowerMultiplier, MegaBombSettings megaBombSettings, NuclearBombSettings nuclearBombSettings, LinkedHashMap<Integer, NuclearTierSettings> nuclearTierSettings, double radiationSuitExposureMultiplier, double radiationSuitExposurePerTenSeconds, OutlineSettings outlineSettings, LinkedHashMap<String, ProtectionTier> protectionTiers, LinkedHashMap<Integer, BombTier> bombTiers, Map<String, String> messages, List<String> ironCoreRecipeShape, Map<Character, Material> ironCoreRecipeIngredients) {
         this.heightBelow = heightBelow;
         this.heightAbove = heightAbove;
         this.protectBlocksFromExplosions = protectBlocksFromExplosions;
@@ -77,6 +78,7 @@ public final class Settings {
         this.nuclearBombSettings = nuclearBombSettings;
         this.nuclearTierSettings = nuclearTierSettings;
         this.radiationSuitExposureMultiplier = radiationSuitExposureMultiplier;
+        this.radiationSuitExposurePerTenSeconds = radiationSuitExposurePerTenSeconds;
         this.outlineSettings = outlineSettings;
         this.protectionTiers = protectionTiers;
         this.bombTiers = bombTiers;
@@ -143,7 +145,7 @@ public final class Settings {
             if (key.length() != 1) continue;
             recipeIngredients.put(Character.valueOf(key.charAt(0)), Settings.material(ingredientSection.getString(key), Material.AIR));
         }
-        return new Settings(Math.max(1, general.getInt("height-below", 16)), Math.max(1, general.getInt("height-above", 24)), general.getBoolean("protect-blocks-from-explosions", true), general.getBoolean("allow-pvp-inside-zones", false), Math.max(1, maxRegions.getInt("default", 3)), Math.max(1, maxRegions.getInt("vip", 6)), Math.max(1, general.getInt("max-members-per-region", 20)), Objects.requireNonNullElse(maxRegions.getString("vip-permission"), "protectionstones.vip"), Math.max(8, home.getInt("scan-up", 32)), Math.max(1, actionBar.getInt("cooldown-ticks", 25)), Math.max(0.0, general.getDouble("core-pulse-damage", 2.0)), Math.max(1, explosive.getInt("countdown-seconds", 5)), Math.max(8, explosive.getInt("sphere-points", 48)), Math.max(1, explosive.getInt("wave-steps", 6)), Math.max(10, explosiveEnd.getInt("rise-ticks", 40)), Math.max(1.0, explosiveEnd.getDouble("power-multiplier", 2.0)), megaBombSettings, nuclearBombSettings, nuclearTiers, Math.max(0.05, Math.min(1.0, explosiveNuclear.getDouble("radiation-suit-exposure-multiplier", 0.3))), outlineSettings, tiers, bombs, Collections.unmodifiableMap(messageMap), List.copyOf(recipeShape), Map.copyOf(recipeIngredients));
+        return new Settings(Math.max(1, general.getInt("height-below", 16)), Math.max(1, general.getInt("height-above", 24)), general.getBoolean("protect-blocks-from-explosions", true), general.getBoolean("allow-pvp-inside-zones", false), Math.max(1, maxRegions.getInt("default", 3)), Math.max(1, maxRegions.getInt("vip", 6)), Math.max(1, general.getInt("max-members-per-region", 20)), Objects.requireNonNullElse(maxRegions.getString("vip-permission"), "protectionstones.vip"), Math.max(8, home.getInt("scan-up", 32)), Math.max(1, actionBar.getInt("cooldown-ticks", 25)), Math.max(0.0, general.getDouble("core-pulse-damage", 2.0)), Math.max(1, explosive.getInt("countdown-seconds", 5)), Math.max(8, explosive.getInt("sphere-points", 48)), Math.max(1, explosive.getInt("wave-steps", 6)), Math.max(10, explosiveEnd.getInt("rise-ticks", 40)), Math.max(1.0, explosiveEnd.getDouble("power-multiplier", 2.0)), megaBombSettings, nuclearBombSettings, nuclearTiers, Math.max(0.05, Math.min(1.0, explosiveNuclear.getDouble("radiation-suit-exposure-multiplier", 0.3))), Math.max(0.0, explosiveNuclear.getDouble("radiation-suit-exposure-per-10-seconds", 0.5)), outlineSettings, tiers, bombs, Collections.unmodifiableMap(messageMap), List.copyOf(recipeShape), Map.copyOf(recipeIngredients));
     }
 
     private static NuclearTierSettings nuclearTierSettings(int level, ConfigurationSection section, NuclearBombSettings fallback) {
@@ -283,6 +285,10 @@ public final class Settings {
 
     public double radiationSuitExposureMultiplier() {
         return this.radiationSuitExposureMultiplier;
+    }
+
+    public double radiationSuitExposurePerTenSeconds() {
+        return this.radiationSuitExposurePerTenSeconds;
     }
 
     public OutlineSettings outlineSettings() {

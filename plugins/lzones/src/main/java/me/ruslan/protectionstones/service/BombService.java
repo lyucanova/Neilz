@@ -278,11 +278,13 @@ public final class BombService {
             }
             exposedPlayers.add(uuid);
             double intensity = zone.intensityAt(player.getLocation(), now);
+            int suitPieces = this.plugin.getItemService().radiationSuitPieces(player);
             double suitMultiplier = this.plugin.getItemService().radiationExposureMultiplier(player);
-            double exposureGain = nuclear.exposurePerSecond() * (0.45 + intensity * 3.55) * suitMultiplier;
+            double rawExposureGain = nuclear.exposurePerSecond() * (0.45 + intensity * 3.55);
+            double exposureGain = suitPieces >= 4 ? this.plugin.getSettings().radiationSuitExposurePerTenSeconds() / 10.0 : rawExposureGain * suitMultiplier;
             double dose = Math.min(nuclear.damageThreshold() * 5.0, this.radiationExposure.getOrDefault(uuid, 0.0) + exposureGain);
             this.radiationExposure.put(uuid, dose);
-            this.applyRadiationEffects(player, intensity);
+            this.applyRadiationEffects(player, intensity, dose, nuclear);
             this.renderRadiationTick(player, zone, dose, nuclear, intensity, suitMultiplier);
             if (dose >= nuclear.damageThreshold()) {
                 double damage = nuclear.damagePerSecond() * (0.75 + intensity * 3.75);
@@ -317,12 +319,15 @@ public final class BombService {
         return null;
     }
 
-    private void applyRadiationEffects(Player player, double intensity) {
+    private void applyRadiationEffects(Player player, double intensity, double dose, Settings.NuclearBombSettings nuclear) {
+        if (dose < nuclear.damageThreshold() * 0.7) {
+            return;
+        }
         int nauseaAmplifier = intensity >= 0.72 ? 1 : 0;
-        int darknessAmplifier = intensity >= 0.88 ? 1 : 0;
+        int blindnessAmplifier = intensity >= 0.88 ? 1 : 0;
         int duration = 80 + (int)Math.round(intensity * 80.0);
         player.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION, duration, nauseaAmplifier, false, true, true));
-        player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, Math.max(70, duration - 10), darknessAmplifier, false, true, true));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, Math.max(70, duration - 10), blindnessAmplifier, false, true, true));
     }
 
     private void renderRadiationTick(Player player, RadiationZone zone, double dose, Settings.NuclearBombSettings nuclear, double intensity, double suitMultiplier) {
