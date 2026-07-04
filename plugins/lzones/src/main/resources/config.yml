@@ -60,6 +60,7 @@ messages:
   bomb-detonated: "&4Осадная сфера взорвалась."
   nuclear-arming: "&4⚠ Ядерная бомба: детонация через &f{seconds}&4 сек."
   nuclear-detonated: "&4⚠ Ядерный взрыв. В кратере радиация!"
+  impact-detonated: "&6XI TNT: детальный ударный взрыв на 200 блоков."
   radiation-warning: "&e⚠ Радиация: облучение &f{dose}/{threshold}"
   radiation-damage: "&c⚠ Критическое облучение: &f{dose}/{threshold}"
   core-damaged: "&6Ядро получило урон TNT: &f{damage}/{max_damage}"
@@ -79,6 +80,7 @@ messages:
   home-teleport: "&bТелепортация на home региона: &f{name}"
 
 shop:
+  radiation-kit-price: 500000.0
   tnt-prices:
     1: 20000.0
     2: 250000.0
@@ -173,11 +175,12 @@ explosive:
     mushroom-radius: 72.0
     radiation-start-radius: 100.0
     radiation-radius: 200.0
-    radiation-duration-seconds: 360
+    radiation-duration-seconds: 700
     radiation-expansion-seconds: 2400
     exposure-per-second: 1.0
     radiation-suit-exposure-multiplier: 0.30
     radiation-suit-exposure-per-10-seconds: 0.5
+    radiation-suit-protection-seconds: 600
     safe-decay-per-second: 0.35
     damage-threshold: 12.0
     damage-per-second: 1.5
@@ -197,6 +200,7 @@ explosive:
       radiation-radius: 200.0
       radiation-expansion-seconds: 2400
       core-shockwave-radius: 180.0
+      radiation: true
       forbidden: false
       world-eater: false
     7:
@@ -213,6 +217,7 @@ explosive:
       radiation-radius: 240.0
       radiation-expansion-seconds: 2400
       core-shockwave-radius: 240.0
+      radiation: true
       forbidden: false
       world-eater: false
     8:
@@ -229,6 +234,7 @@ explosive:
       radiation-radius: 300.0
       radiation-expansion-seconds: 3000
       core-shockwave-radius: 320.0
+      radiation: true
       forbidden: false
       world-eater: false
     9:
@@ -245,6 +251,7 @@ explosive:
       radiation-radius: 360.0
       radiation-expansion-seconds: 3200
       core-shockwave-radius: 410.0
+      radiation: true
       forbidden: false
       world-eater: false
     10:
@@ -261,11 +268,29 @@ explosive:
       radiation-radius: 520.0
       radiation-expansion-seconds: 3600
       core-shockwave-radius: 700.0
+      radiation: true
       forbidden: true
       world-eater: true
       world-eater-radius: 1000
       world-eater-blocks-per-tick: 1200
       world-eater-max-blocks: 600000
+    11:
+      name: "Impact XI"
+      yield-kilotons: 200.0
+      blast-radius: 200.0
+      explosion-power: 72.0
+      crater-radius: 46
+      crater-depth: 22
+      crater-height: 28
+      mushroom-height: 155.0
+      mushroom-radius: 82.0
+      radiation-start-radius: 1.0
+      radiation-radius: 200.0
+      radiation-expansion-seconds: 1
+      core-shockwave-radius: 200.0
+      radiation: false
+      forbidden: false
+      world-eater: false
   levels:
     1:
       item: "REDSTONE_BLOCK"
@@ -307,6 +332,10 @@ explosive:
       item: "TNT"
       power: 1000000.0
       core-hits: 999
+    11:
+      item: "TNT"
+      power: 200.0
+      core-hits: 35
 
 recipes:
   iron-core:

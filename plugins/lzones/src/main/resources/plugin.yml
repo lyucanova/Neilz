@@ -1,5 +1,5 @@
 name: LZones
-version: "2.3.2-custom"
+version: "2.3.3-custom"
 main: me.ruslan.protectionstones.ProtectionStonesPlugin
 api-version: "1.20"
 authors: [Ruslan, OpenAI]
@@ -19,7 +19,7 @@ commands:
     permission: protectionstones.use
   tntshop:
     description: TNT bomb shop
-    usage: /tntshop [1-5]
+    usage: /tntshop [1-5|radkit]
     aliases: [tshop]
     permission: protectionstones.tntshop
 

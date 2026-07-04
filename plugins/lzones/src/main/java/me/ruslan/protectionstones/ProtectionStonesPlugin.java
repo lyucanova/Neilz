@@ -145,6 +145,7 @@ extends JavaPlugin {
         changed |= this.setIfMissing("shop.tnt-prices.3", 650000.0);
         changed |= this.setIfMissing("shop.tnt-prices.4", 1000000.0);
         changed |= this.setIfMissing("shop.tnt-prices.5", 15000000.0);
+        changed |= this.setIfMissing("shop.radiation-kit-price", 500000.0);
         changed |= this.setIfMissing("explosive.levels.6.item", "TNT");
         changed |= this.migrateDouble("explosive.levels.6.power", 18.0, 24.0);
         changed |= this.migrateDouble("explosive.levels.6.power", 30.0, 24.0);
@@ -153,6 +154,7 @@ extends JavaPlugin {
         changed |= this.setBombLevelDefaults(8, "TNT", 50000.0, 80);
         changed |= this.setBombLevelDefaults(9, "TNT", 100000.0, 160);
         changed |= this.setBombLevelDefaults(10, "TNT", 1000000.0, 999);
+        changed |= this.setBombLevelDefaults(11, "TNT", 200.0, 35);
         changed |= this.migrateInt("explosive.nuclear.charge-ticks", 100, 140);
         changed |= this.migrateInt("explosive.nuclear.charge-ticks", 120, 140);
         changed |= this.migrateDouble("explosive.nuclear.blast-radius", 30.0, 180.0);
@@ -180,10 +182,12 @@ extends JavaPlugin {
         changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 180, 360);
         changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 240, 360);
         changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", -1, 360);
+        changed |= this.migrateInt("explosive.nuclear.radiation-duration-seconds", 360, 700);
         changed |= this.setIfMissing("explosive.nuclear.radiation-expansion-seconds", 2400);
         changed |= this.setIfMissing("explosive.nuclear.exposure-per-second", 1.0);
         changed |= this.setIfMissing("explosive.nuclear.radiation-suit-exposure-multiplier", 0.30);
         changed |= this.setIfMissing("explosive.nuclear.radiation-suit-exposure-per-10-seconds", 0.5);
+        changed |= this.setIfMissing("explosive.nuclear.radiation-suit-protection-seconds", 600);
         changed |= this.setIfMissing("explosive.nuclear.safe-decay-per-second", 0.35);
         changed |= this.setIfMissing("explosive.nuclear.damage-threshold", 12.0);
         changed |= this.setIfMissing("explosive.nuclear.damage-per-second", 1.5);
@@ -191,13 +195,15 @@ extends JavaPlugin {
         changed |= this.migrateDouble("explosive.nuclear.core-shockwave-radius", 100.0, 180.0);
         changed |= this.migrateDouble("explosive.nuclear.core-shockwave-radius", 120.0, 180.0);
         changed |= this.setIfMissing("explosive.nuclear.yield-kilotons", 24.0);
-        changed |= this.setNuclearTierDefaults(6, "Fat Man+", 24.0, 180.0, 52.0, 38, 18, 24, 170.0, 72.0, 100.0, 200.0, 2400, 180.0, false, false, 0, 650, 0);
-        changed |= this.setNuclearTierDefaults(7, "Castle Bravo", 15000.0, 240.0, 68.0, 48, 24, 30, 220.0, 95.0, 120.0, 240.0, 2400, 240.0, false, false, 0, 650, 0);
-        changed |= this.setNuclearTierDefaults(8, "Tsar Bomba", 50000.0, 320.0, 86.0, 58, 30, 38, 280.0, 125.0, 150.0, 300.0, 3000, 320.0, false, false, 0, 650, 0);
-        changed |= this.setNuclearTierDefaults(9, "Tsar Bomba MAX", 100000.0, 410.0, 104.0, 68, 36, 46, 340.0, 155.0, 180.0, 360.0, 3200, 410.0, false, false, 0, 650, 0);
-        changed |= this.setNuclearTierDefaults(10, "World Eater", 1000000.0, 520.0, 128.0, 86, 44, 58, 430.0, 210.0, 220.0, 520.0, 3600, 700.0, true, true, 1000, 1200, 600000);
+        changed |= this.setNuclearTierDefaults(6, "Fat Man+", 24.0, 180.0, 52.0, 38, 18, 24, 170.0, 72.0, 100.0, 200.0, 2400, 180.0, true, false, false, 0, 650, 0);
+        changed |= this.setNuclearTierDefaults(7, "Castle Bravo", 15000.0, 240.0, 68.0, 48, 24, 30, 220.0, 95.0, 120.0, 240.0, 2400, 240.0, true, false, false, 0, 650, 0);
+        changed |= this.setNuclearTierDefaults(8, "Tsar Bomba", 50000.0, 320.0, 86.0, 58, 30, 38, 280.0, 125.0, 150.0, 300.0, 3000, 320.0, true, false, false, 0, 650, 0);
+        changed |= this.setNuclearTierDefaults(9, "Tsar Bomba MAX", 100000.0, 410.0, 104.0, 68, 36, 46, 340.0, 155.0, 180.0, 360.0, 3200, 410.0, true, false, false, 0, 650, 0);
+        changed |= this.setNuclearTierDefaults(10, "World Eater", 1000000.0, 520.0, 128.0, 86, 44, 58, 430.0, 210.0, 220.0, 520.0, 3600, 700.0, true, true, true, 1000, 1200, 600000);
+        changed |= this.setNuclearTierDefaults(11, "Impact XI", 200.0, 200.0, 72.0, 46, 22, 28, 155.0, 82.0, 1.0, 200.0, 1, 200.0, false, false, false, 0, 650, 0);
         changed |= this.setIfMissing("messages.nuclear-arming", "&4⚠ Ядерная бомба: детонация через &f{seconds}&4 сек.");
         changed |= this.setIfMissing("messages.nuclear-detonated", "&4⚠ Ядерный взрыв. В кратере радиация!");
+        changed |= this.setIfMissing("messages.impact-detonated", "&6XI TNT: детальный ударный взрыв на 200 блоков.");
         changed |= this.setIfMissing("messages.radiation-warning", "&e⚠ Радиация: облучение &f{dose}/{threshold}");
         changed |= this.setIfMissing("messages.radiation-damage", "&c⚠ Критическое облучение: &f{dose}/{threshold}");
         changed |= this.setIfMissing("messages.member-added", "&aИгрок &f{player}&a добавлен в регион &f{region}&a. Участников: &f{count}/{max}");
@@ -247,7 +253,7 @@ extends JavaPlugin {
         return changed;
     }
 
-    private boolean setNuclearTierDefaults(int level, String name, double yieldKilotons, double blastRadius, double explosionPower, int craterRadius, int craterDepth, int craterHeight, double mushroomHeight, double mushroomRadius, double radiationStartRadius, double radiationRadius, int radiationExpansionSeconds, double coreShockwaveRadius, boolean forbidden, boolean worldEater, int worldEaterRadius, int worldEaterBlocksPerTick, int worldEaterMaxBlocks) {
+    private boolean setNuclearTierDefaults(int level, String name, double yieldKilotons, double blastRadius, double explosionPower, int craterRadius, int craterDepth, int craterHeight, double mushroomHeight, double mushroomRadius, double radiationStartRadius, double radiationRadius, int radiationExpansionSeconds, double coreShockwaveRadius, boolean radiation, boolean forbidden, boolean worldEater, int worldEaterRadius, int worldEaterBlocksPerTick, int worldEaterMaxBlocks) {
         boolean changed = false;
         String prefix = "explosive.nuclear-tiers." + level;
         changed |= this.setIfMissing(prefix + ".name", name);
@@ -263,6 +269,7 @@ extends JavaPlugin {
         changed |= this.setIfMissing(prefix + ".radiation-radius", radiationRadius);
         changed |= this.setIfMissing(prefix + ".radiation-expansion-seconds", radiationExpansionSeconds);
         changed |= this.setIfMissing(prefix + ".core-shockwave-radius", coreShockwaveRadius);
+        changed |= this.setIfMissing(prefix + ".radiation", radiation);
         changed |= this.setIfMissing(prefix + ".forbidden", forbidden);
         changed |= this.setIfMissing(prefix + ".world-eater", worldEater);
         if (worldEater) {

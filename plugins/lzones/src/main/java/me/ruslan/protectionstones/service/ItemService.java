@@ -27,10 +27,12 @@ import me.ruslan.protectionstones.config.Settings;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -42,6 +44,7 @@ public final class ItemService {
     private final NamespacedKey kindKey;
     private final NamespacedKey valueKey;
     private final NamespacedKey levelKey;
+    private final NamespacedKey chargeKey;
     private final Set<String> warnedEnchantKeys;
 
     public ItemService(ProtectionStonesPlugin plugin) {
@@ -49,6 +52,7 @@ public final class ItemService {
         this.kindKey = new NamespacedKey((Plugin)plugin, "kind");
         this.valueKey = new NamespacedKey((Plugin)plugin, "value");
         this.levelKey = new NamespacedKey((Plugin)plugin, "level");
+        this.chargeKey = new NamespacedKey((Plugin)plugin, "charge");
         this.warnedEnchantKeys = new HashSet<String>();
     }
 
@@ -97,11 +101,12 @@ public final class ItemService {
         LeatherArmorMeta meta = (LeatherArmorMeta)item.getItemMeta();
         meta.setColor(Color.fromRGB((int)110, (int)190, (int)65));
         meta.setDisplayName(name);
-        meta.setLore(List.of("\u00a77\u041a\u043e\u043c\u043f\u043b\u0435\u043a\u0442 \u043e\u0442 \u0440\u0430\u0434\u0438\u0430\u0446\u0438\u0438 LZones", "\u00a77\u041d\u0435 \u0443\u0431\u0438\u0440\u0430\u0435\u0442 \u0438\u0437\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u043f\u043e\u043b\u043d\u043e\u0441\u0442\u044c\u044e", "\u00a77\u041f\u043e\u043b\u043d\u044b\u0439 \u0441\u0435\u0442: \u00a7f" + this.formatDose(this.plugin.getSettings().radiationSuitExposurePerTenSeconds()) + " \u00a77\u043e\u0431\u043b\u0443\u0447\u0435\u043d\u0438\u044f \u0437\u0430 10 \u0441\u0435\u043a."));
         this.applyEnchant(meta, "protection", 4, "radiation suit");
         meta.addItemFlags(new ItemFlag[]{ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_DYE});
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(this.kindKey, PersistentDataType.STRING, "radiation_suit");
+        pdc.set(this.chargeKey, PersistentDataType.INTEGER, this.plugin.getSettings().radiationSuitProtectionSeconds());
+        this.applyRadiationSuitLore(item, meta, this.plugin.getSettings().radiationSuitProtectionSeconds());
         item.setItemMeta(meta);
         return item;
     }
@@ -119,7 +124,11 @@ public final class ItemService {
             lore.add("\u00a77\u041c\u043e\u0449\u043d\u043e\u0441\u0442\u044c: \u00a7f" + this.formatYield(profile.yieldKilotons()));
             lore.add("\u00a77\u0423\u0434\u0430\u0440\u043e\u0432 \u043f\u043e \u044f\u0434\u0440\u0443: \u00a7f" + tier.coreHits());
             lore.add("\u00a77\u0420\u0430\u0434\u0438\u0443\u0441 \u0432\u0437\u0440\u044b\u0432\u0430: \u00a7f" + (int)profile.blastRadius());
-            lore.add("\u00a77\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u044f: \u00a7f" + (int)profile.radiationStartRadius() + "-" + (int)profile.radiationRadius() + "\u00a77 \u0431\u043b\u043e\u043a\u043e\u0432, \u00a7f" + radiationTime);
+            if (profile.radiation()) {
+                lore.add("\u00a77\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u044f: \u00a7f" + (int)profile.radiationStartRadius() + "-" + (int)profile.radiationRadius() + "\u00a77 \u0431\u043b\u043e\u043a\u043e\u0432, \u00a7f" + radiationTime);
+            } else {
+                lore.add("\u00a77\u0420\u0430\u0434\u0438\u0430\u0446\u0438\u044f: \u00a7a\u043d\u0435\u0442, \u0442\u043e\u043b\u044c\u043a\u043e \u0434\u0435\u0442\u0430\u043b\u044c\u043d\u044b\u0439 \u0432\u0437\u0440\u044b\u0432");
+            }
             lore.add("\u00a77\u0411\u0435\u0437 \u043f\u0440\u0438\u0442\u044f\u0433\u0438\u0432\u0430\u043d\u0438\u044f: \u0432\u0437\u0440\u044b\u0432 \u0442\u043e\u043b\u044c\u043a\u043e \u043e\u0442\u043a\u0438\u0434\u044b\u0432\u0430\u0435\u0442");
             lore.add("\u00a77\u041b\u043e\u043c\u0430\u0435\u0442 \u0431\u043b\u043e\u043a\u0438 \u0432\u0432\u0435\u0440\u0445 \u0438 \u0432\u043d\u0438\u0437 \u043e\u0442 \u044d\u043f\u0438\u0446\u0435\u043d\u0442\u0440\u0430");
             lore.add("\u00a77\u041f\u043e\u0441\u043b\u0435 \u0432\u0437\u0440\u044b\u0432\u0430 \u043e\u0441\u0442\u0430\u0432\u043b\u044f\u0435\u0442 \u043a\u0440\u0430\u0442\u0435\u0440, \u0433\u0440\u0438\u0431 \u0438 \u0440\u0430\u0434\u0438\u0430\u0446\u0438\u044e");
@@ -210,6 +219,34 @@ public final class ItemService {
         return (int)Arrays.stream(player.getInventory().getArmorContents()).filter(this::isRadiationSuitPiece).count();
     }
 
+    public boolean consumeRadiationSuitProtection(Player player) {
+        if (player == null) {
+            return false;
+        }
+        ItemStack[] armor = player.getInventory().getArmorContents();
+        for (ItemStack piece : armor) {
+            if (!this.isRadiationSuitPiece(piece) || this.radiationSuitCharge(piece) <= 0) {
+                return false;
+            }
+        }
+        boolean broke = false;
+        for (int i = 0; i < armor.length; ++i) {
+            int charge = Math.max(0, this.radiationSuitCharge(armor[i]) - 1);
+            if (charge <= 0) {
+                armor[i] = null;
+                broke = true;
+                continue;
+            }
+            this.setRadiationSuitCharge(armor[i], charge);
+        }
+        player.getInventory().setArmorContents(armor);
+        if (broke) {
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.9f, 0.8f);
+            player.sendActionBar(this.plugin.getMessageService().component("&cРадиационный костюм сломался"));
+        }
+        return true;
+    }
+
     public double radiationExposureMultiplier(Player player) {
         int pieces = this.radiationSuitPieces(player);
         if (pieces <= 0) {
@@ -217,6 +254,34 @@ public final class ItemService {
         }
         double fullSetMultiplier = this.plugin.getSettings().radiationSuitExposureMultiplier();
         return Math.pow(fullSetMultiplier, (double)Math.min(4, pieces) / 4.0);
+    }
+
+    private int radiationSuitCharge(ItemStack item) {
+        if (!this.isRadiationSuitPiece(item)) {
+            return 0;
+        }
+        Integer charge = (Integer)item.getItemMeta().getPersistentDataContainer().get(this.chargeKey, PersistentDataType.INTEGER);
+        return charge == null ? this.plugin.getSettings().radiationSuitProtectionSeconds() : Math.max(0, charge);
+    }
+
+    private void setRadiationSuitCharge(ItemStack item, int charge) {
+        if (!this.isRadiationSuitPiece(item)) {
+            return;
+        }
+        ItemMeta rawMeta = item.getItemMeta();
+        rawMeta.getPersistentDataContainer().set(this.chargeKey, PersistentDataType.INTEGER, Math.max(0, charge));
+        this.applyRadiationSuitLore(item, rawMeta, Math.max(0, charge));
+        item.setItemMeta(rawMeta);
+    }
+
+    private void applyRadiationSuitLore(ItemStack item, ItemMeta rawMeta, int charge) {
+        int maxCharge = Math.max(1, this.plugin.getSettings().radiationSuitProtectionSeconds());
+        rawMeta.setLore(List.of("\u00a77\u041a\u043e\u043c\u043f\u043b\u0435\u043a\u0442 \u043e\u0442 \u0440\u0430\u0434\u0438\u0430\u0446\u0438\u0438 LZones", "\u00a77\u041f\u043e\u043b\u043d\u044b\u0439 \u0441\u0435\u0442 \u0433\u0430\u0441\u0438\u0442 \u043d\u043e\u0432\u043e\u0435 \u043e\u0431\u043b\u0443\u0447\u0435\u043d\u0438\u0435", "\u00a77\u0417\u0430\u0440\u044f\u0434: \u00a7f" + Math.max(0, charge) + "\u00a77/\u00a7f" + maxCharge + "\u00a77 \u0441\u0435\u043a."));
+        if (rawMeta instanceof Damageable damageable) {
+            int maxDurability = Math.max(1, item.getType().getMaxDurability());
+            int damage = maxDurability - Math.max(1, (int)Math.round((double)Math.max(0, charge) / (double)maxCharge * (double)maxDurability));
+            damageable.setDamage(Math.max(0, Math.min(maxDurability - 1, damage)));
+        }
     }
 
     public boolean looksLikeCoreMaterial(ItemStack item) {

@@ -5,7 +5,7 @@
 
     <groupId>me.ruslan</groupId>
     <artifactId>lzones</artifactId>
-    <version>2.3.2-custom</version>
+    <version>2.3.3-custom</version>
     <packaging>jar</packaging>
 
     <name>LZones</name>

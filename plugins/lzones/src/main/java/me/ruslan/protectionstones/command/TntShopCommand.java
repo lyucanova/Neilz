@@ -17,6 +17,7 @@ import org.bukkit.inventory.ItemStack;
 
 public final class TntShopCommand implements CommandExecutor, TabCompleter {
     private static final Map<Integer, Double> DEFAULT_PRICES = new LinkedHashMap<Integer, Double>();
+    private static final double DEFAULT_RADIATION_KIT_PRICE = 500000.0;
 
     static {
         DEFAULT_PRICES.put(1, 20000.0);
@@ -45,6 +46,10 @@ public final class TntShopCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         String levelArg = args.length >= 2 && this.isBuyAlias(args[0]) ? args[1] : args[0];
+        if (this.isRadiationKitAlias(levelArg)) {
+            this.buyRadiationKit(player);
+            return true;
+        }
         if (!this.isInt(levelArg)) {
             this.sendShop(player);
             return true;
@@ -64,6 +69,7 @@ public final class TntShopCommand implements CommandExecutor, TabCompleter {
             double price = this.price(level);
             player.sendMessage(this.plugin.getMessageService().component("&7/tntshop " + level + " &e- TNT " + this.plugin.getItemService().roman(level) + " &7| &a" + this.plugin.getEconomyService().format(price)));
         }
+        player.sendMessage(this.plugin.getMessageService().component("&7/tntshop radkit &e- Радиационный комплект &7| &a" + this.plugin.getEconomyService().format(this.radiationKitPrice())));
     }
 
     private void buy(Player player, int level) {
@@ -94,13 +100,46 @@ public final class TntShopCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(this.plugin.getMessageService().component("&aКуплено: &fTNT " + this.plugin.getItemService().roman(level) + " &7за &a" + this.plugin.getEconomyService().format(price)));
     }
 
+    private void buyRadiationKit(Player player) {
+        if (!this.plugin.getEconomyService().isAvailable()) {
+            player.sendMessage(this.plugin.getMessageService().component("&cTNT Shop недоступен: нужен Vault и плагин экономики."));
+            return;
+        }
+        double price = this.radiationKitPrice();
+        if (!this.plugin.getEconomyService().has(player, price)) {
+            player.sendMessage(this.plugin.getMessageService().component("&cНе хватает денег. Нужно: &f" + this.plugin.getEconomyService().format(price)));
+            return;
+        }
+        if (!this.plugin.getEconomyService().withdraw(player, price)) {
+            player.sendMessage(this.plugin.getMessageService().component("&cНе удалось списать деньги. Попробуй ещё раз."));
+            return;
+        }
+        for (ItemStack piece : this.plugin.getItemService().createRadiationSuit()) {
+            Map<Integer, ItemStack> leftovers = player.getInventory().addItem(new ItemStack[]{piece});
+            for (ItemStack leftover : leftovers.values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+            }
+        }
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.15f);
+        player.sendMessage(this.plugin.getMessageService().component("&aКуплен радиационный комплект за &f" + this.plugin.getEconomyService().format(price)));
+    }
+
     private double price(int level) {
         return this.plugin.getConfig().getDouble("shop.tnt-prices." + level, DEFAULT_PRICES.getOrDefault(level, 0.0));
+    }
+
+    private double radiationKitPrice() {
+        return this.plugin.getConfig().getDouble("shop.radiation-kit-price", DEFAULT_RADIATION_KIT_PRICE);
     }
 
     private boolean isBuyAlias(String value) {
         String normalized = value.toLowerCase(Locale.ROOT);
         return normalized.equals("buy") || normalized.equals("b") || normalized.equals("купить");
+    }
+
+    private boolean isRadiationKitAlias(String value) {
+        String normalized = value.toLowerCase(Locale.ROOT);
+        return normalized.equals("radkit") || normalized.equals("radiation") || normalized.equals("radiationkit");
     }
 
     private boolean isInt(String value) {
@@ -133,6 +172,7 @@ public final class TntShopCommand implements CommandExecutor, TabCompleter {
             completions.add("3");
             completions.add("4");
             completions.add("5");
+            completions.add("radkit");
             completions.add("buy");
         } else if (args.length == 2 && this.isBuyAlias(args[0])) {
             completions.add("1");
@@ -140,6 +180,7 @@ public final class TntShopCommand implements CommandExecutor, TabCompleter {
             completions.add("3");
             completions.add("4");
             completions.add("5");
+            completions.add("radkit");
         }
         String current = args[args.length - 1].toLowerCase(Locale.ROOT);
         completions.removeIf(entry -> !entry.toLowerCase(Locale.ROOT).startsWith(current));
