@@ -14,6 +14,9 @@ package me.ruslan.protectionstones.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -37,6 +40,7 @@ public final class RegionService {
     private final File storageFile;
     private final Map<String, List<Region>> regionsByWorld = new LinkedHashMap<String, List<Region>>();
     private final Map<String, Region> regionsByCore = new LinkedHashMap<String, Region>();
+    private boolean loadedCleanly = true;
 
     public RegionService(ProtectionStonesPlugin plugin) {
         this.plugin = plugin;
@@ -48,32 +52,75 @@ public final class RegionService {
     }
 
     public void load() throws IOException {
-        this.regionsByWorld.clear();
-        this.regionsByCore.clear();
+        this.loadedCleanly = false;
         if (!this.storageFile.exists()) {
+            this.regionsByWorld.clear();
+            this.regionsByCore.clear();
+            this.loadedCleanly = true;
+            return;
+        }
+        if (this.storageFile.length() == 0L) {
+            this.regionsByWorld.clear();
+            this.regionsByCore.clear();
+            this.loadedCleanly = true;
             return;
         }
         YamlConfiguration configuration = YamlConfiguration.loadConfiguration((File)this.storageFile);
+        if (!configuration.isList("regions")) {
+            throw new IOException("regions.yml does not contain a regions list; keeping the old file untouched");
+        }
         List<Map<?, ?>> raw = configuration.getMapList("regions");
+        ArrayList<Region> loaded = new ArrayList<Region>();
+        int brokenEntries = 0;
         for (Map<?, ?> entry : raw) {
             try {
                 Region region = Region.deserialize(entry);
-                this.add(region);
+                loaded.add(region);
             }
             catch (Exception ex) {
+                ++brokenEntries;
                 this.plugin.getLogger().warning("Skipping broken region entry: " + ex.getMessage());
             }
+        }
+        if (!raw.isEmpty() && loaded.isEmpty()) {
+            throw new IOException("regions.yml has " + raw.size() + " entries, but none could be loaded; keeping the old file untouched");
+        }
+        this.regionsByWorld.clear();
+        this.regionsByCore.clear();
+        for (Region region : loaded) {
+            this.add(region);
+        }
+        this.loadedCleanly = brokenEntries == 0;
+        if (brokenEntries > 0) {
+            this.plugin.getLogger().warning("Loaded " + loaded.size() + " regions, but " + brokenEntries + " entries were broken. Region saves are blocked until regions.yml is fixed.");
         }
     }
 
     public void save() throws IOException {
+        if (!this.loadedCleanly && this.storageFile.exists()) {
+            throw new IOException("regions.yml was not loaded cleanly; refusing to overwrite it");
+        }
         YamlConfiguration configuration = new YamlConfiguration();
         ArrayList<Map<String, Object>> serialized = new ArrayList<Map<String, Object>>();
         for (Region region : this.allRegions()) {
             serialized.add(region.serialize());
         }
         configuration.set("regions", serialized);
-        configuration.save(this.storageFile);
+        File parent = this.storageFile.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs();
+        }
+        if (this.storageFile.exists()) {
+            Files.copy(this.storageFile.toPath(), new File(parent, "regions.yml.bak").toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+        File tempFile = new File(parent, "regions.yml.tmp");
+        configuration.save(tempFile);
+        try {
+            Files.move(tempFile.toPath(), this.storageFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        }
+        catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(tempFile.toPath(), this.storageFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     public Region createRegion(Player player, Location coreLocation, Settings.ProtectionTier shellTier, int bookLevel) {

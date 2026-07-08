@@ -8,6 +8,7 @@
  */
 package me.ruslan.protectionstones.model;
 
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -250,13 +251,30 @@ public final class Region {
     }
 
     public static Region deserialize(Map<?, ?> map) {
-        String tierId = Region.stringValue(map, "tierId", "iron");
-        UUID ownerUuid = UUID.fromString(Region.stringValue(map, "ownerUuid", new UUID(0L, 0L).toString()));
-        return new Region(Region.stringValue(map, "name", "zone"), ownerUuid, Region.stringValue(map, "ownerName", "Unknown"), Region.stringValue(map, "world", "world"), Region.number(map.get("coreX")), Region.number(map.get("coreY")), Region.number(map.get("coreZ")), Region.number(map.get("radius")), Region.number(map.get("minY")), Region.number(map.get("maxY")), tierId, Region.number(map.containsKey("bookLevel") ? map.get("bookLevel") : Integer.valueOf(Region.inferBookLevel(tierId))), Region.number(map.containsKey("tntDamage") ? map.get("tntDamage") : Integer.valueOf(0)), Region.deserializeMembers(map.get("members"), ownerUuid));
+        String tierId = Region.firstStringValue(map, "iron", "tierId", "tier");
+        String ownerText = Region.firstStringValue(map, "", "ownerUuid", "ownerUUID", "owner");
+        UUID parsedOwnerUuid = Region.parseUuid(ownerText);
+        String ownerName = Region.firstStringValue(map, "Unknown", "ownerName", "owner_name");
+        if (parsedOwnerUuid == null && "Unknown".equals(ownerName) && ownerText != null && !ownerText.isBlank()) {
+            ownerName = ownerText;
+        }
+        UUID ownerUuid = parsedOwnerUuid == null ? Region.legacyOwnerUuid(ownerText, ownerName) : parsedOwnerUuid;
+        return new Region(Region.stringValue(map, "name", "zone"), ownerUuid, ownerName, Region.stringValue(map, "world", "world"), Region.number(map.get("coreX")), Region.number(map.get("coreY")), Region.number(map.get("coreZ")), Region.number(map.get("radius")), Region.number(map.get("minY")), Region.number(map.get("maxY")), tierId, Region.number(map.containsKey("bookLevel") ? map.get("bookLevel") : null, Region.inferBookLevel(tierId)), Region.number(map.containsKey("tntDamage") ? map.get("tntDamage") : null, 0), Region.deserializeMembers(map.get("members"), ownerUuid));
     }
 
     private static LinkedHashMap<UUID, String> deserializeMembers(Object rawMembers, UUID ownerUuid) {
         LinkedHashMap<UUID, String> members = new LinkedHashMap<UUID, String>();
+        if (rawMembers instanceof Map<?, ?> memberMap) {
+            for (Map.Entry<?, ?> entry : memberMap.entrySet()) {
+                UUID uuid = Region.parseUuid(entry.getKey());
+                if (uuid == null || uuid.equals(ownerUuid)) {
+                    continue;
+                }
+                String name = entry.getValue() == null ? uuid.toString() : String.valueOf(entry.getValue());
+                members.put(uuid, name.isBlank() ? uuid.toString() : name);
+            }
+            return members;
+        }
         if (!(rawMembers instanceof Iterable<?> iterable)) {
             return members;
         }
@@ -292,12 +310,42 @@ public final class Region {
         return value == null ? fallback : String.valueOf(value);
     }
 
+    private static String firstStringValue(Map<?, ?> map, String fallback, String ... keys) {
+        for (String key : keys) {
+            Object value = map.get(key);
+            if (value != null) {
+                return String.valueOf(value);
+            }
+        }
+        return fallback;
+    }
+
     private static int number(Object value) {
         if (value instanceof Number) {
             Number number = (Number)value;
             return number.intValue();
         }
-        return Integer.parseInt(String.valueOf(value));
+        if (value == null) {
+            throw new IllegalArgumentException("Missing numeric region value");
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value).trim());
+        }
+        catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid numeric region value: " + value);
+        }
+    }
+
+    private static int number(Object value, int fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            return Region.number(value);
+        }
+        catch (IllegalArgumentException ignored) {
+            return fallback;
+        }
     }
 
     private static UUID parseUuid(Object value) {
@@ -310,5 +358,10 @@ public final class Region {
         catch (IllegalArgumentException ignored) {
             return null;
         }
+    }
+
+    private static UUID legacyOwnerUuid(String ownerText, String ownerName) {
+        String seed = "legacy-owner:" + (ownerText == null ? "" : ownerText) + ":" + (ownerName == null ? "" : ownerName);
+        return UUID.nameUUIDFromBytes(seed.getBytes(StandardCharsets.UTF_8));
     }
 }
