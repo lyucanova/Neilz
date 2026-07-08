@@ -254,7 +254,6 @@ implements Listener {
             Optional<Region> coreRegion = this.plugin.getRegionService().regionByCore(block.getLocation());
             if (coreRegion.isPresent()) {
                 affectedBlocks.remove(block);
-                this.plugin.getRegionService().damageCore(coreRegion.orElseThrow(), 1);
                 continue;
             }
             if (!this.plugin.getSettings().protectBlocksFromExplosions() || !this.plugin.getRegionService().regionAt(block.getLocation()).isPresent()) continue;

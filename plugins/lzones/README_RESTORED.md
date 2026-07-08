@@ -42,4 +42,5 @@ Custom changes:
 - Radiation armor now has a timed charge (`explosive.nuclear.radiation-suit-protection-seconds`, default `600`); a full charged set blocks new radiation exposure until the pieces break.
 - Radiation armor can also be bought with `/tntshop radkit`; price is `shop.radiation-kit-price` (default `500000`).
 - Added TNT XI (`/lr give bomb 11`) with a 200-block detailed impact explosion, extra shockwave visuals, crater, mushroom-style column, and no radiation zone.
+- Generic explosions, including wind charges, no longer damage protection cores; custom LZones TNT damage is still applied by the bomb service.
 - Added `/tntshop` for buying TNT bombs level 1-5 through Vault economy with configurable prices.
